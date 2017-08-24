@@ -1,6 +1,8 @@
-pragma solidity ^0.4.13;
+pragma solidity ^0.4.15;
+import './SafeInterface.sol';
+import './Balances.sol';
 
-contract Safe {
+contract Safe is SafeInterface, Balances {
     address constant SAFEDAO = 0x0;
 
     address holder;         // address of the holder

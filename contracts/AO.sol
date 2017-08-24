@@ -5,10 +5,6 @@ import './Backdoor.sol';
 contract AO is SmartToken, Backdoor {
 
     function AO() 
-        SmartToken("SafeToken",
-                   "AO",
-                   18) {
-        _;
-    }
-    
+        SmartToken("SafeToken", "AO", 18)
+    {}
 }

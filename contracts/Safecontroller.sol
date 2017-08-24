@@ -1,7 +1,7 @@
 pragma solidity ^0.4.13;
 import './AO.sol';
 import './bancor/solidity/contracts/BancorChanger.sol';
-import './Vault.sol';
+import './Safe.sol';
 
 /**
 
@@ -18,6 +18,14 @@ import './Vault.sol';
                           /      \
                         _______  _______   
                         |vault|  |vault| 
+
+    The fee for withdrawing is calculated at the time of your most recent deposit.
+    The fee is determined by querying the Bancor protocol contract to retrieve the
+    most recent exchange rate of AO -> Eth, then calculates the Eth balance in the user
+    safe and adds the amount being deposited. Thereafter it sets the withdrawal fee equal
+    to the current valuation of the safe in AO and divides it by 100.
+    TODO: in the future we will add a 1.25x multiplier to the AO held in the safe, this means 
+    that straight up AO will hold a higher weight.
  */
 
 

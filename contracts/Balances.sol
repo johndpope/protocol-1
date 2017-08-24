@@ -1,5 +1,6 @@
 pragma solidity ^0.4.15;
-import './Backdoor.sol';        // temporary
+import './AO.sol';
+import './Backdoor.sol';            // temporary
 
 /**
     The idea of this contract is that it will hold the business
@@ -12,13 +13,13 @@ import './Backdoor.sol';        // temporary
 
  */
 contract Balances is Backdoor {
+    AO safeToken;                   // Address of the official SafeToken
     address connectedContract;      // The Safe contract addresss.
-    address user;                   // The user address.
 
     function Balances(address _contract,
-                      address _user) {
+                      address _safeToken) {
         connectedContract = _contract;
-        user = _user;                      
+        safeToken = AO(_safeToken);                    
     }
 
     function query()
@@ -28,7 +29,7 @@ contract Balances is Backdoor {
     }
 
     function deposit()
-        public payable
+        public payable returns (bool)
     {
         assert(msg.sender == connectedContract);
         assert(msg.value > 0);
