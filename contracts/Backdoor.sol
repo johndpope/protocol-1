@@ -15,6 +15,12 @@ contract Backdoor {
         _;
     }
 
+    function recoverFundsAndDestroy() 
+        onlyAdmin
+    {
+        selfdestruct(admin);
+    }
+
     function removeBackdoor()
         onlyAdmin
     {
