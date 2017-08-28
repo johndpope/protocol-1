@@ -1,6 +1,7 @@
 pragma solidity ^0.4.15;
 import './AO.sol';
 import './Backdoor.sol';            // temporary
+import './SafeMath.sol';
 
 /**
     The idea of this contract is that it will hold the business
@@ -13,6 +14,8 @@ import './Backdoor.sol';            // temporary
 
  */
 contract Balances is Backdoor {
+    using SafeMath for uint;
+
     AO safeToken;                   // Address of the official SafeToken
     address connectedContract;      // The Safe contract addresss.
 
@@ -22,10 +25,12 @@ contract Balances is Backdoor {
         safeToken = AO(_safeToken);                    
     }
 
-    function query()
+    function queryBalance()
         public constant returns (uint)
     {
-        return this.balance;        // returns balance of ether
+        var etherValueOfSafeToken = safeToken.balanceOf().mul(MULTIPLIER);
+        // TODO add function to AO for safeToken.balanceOfInEther();
+        return this.balance.add(etherValueOfSafeToken);
     }
 
     function deposit()
@@ -41,6 +46,15 @@ contract Balances is Backdoor {
         payable
     {
         deposit();
+    }
+
+    /// @dev Sets a new official address of the AO.
+    function setSafeToken(address _newSafeToken) {
+        require(safeToken != _newSafeToken);
+        assert(_newSafeToken != 0x0);
+
+        delete safeToken;
+        safeToken = AO(_newSafeToken);
     }
 
     event Deposit(uint indexed amount);

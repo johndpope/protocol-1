@@ -1,7 +1,9 @@
 pragma solidity ^0.4.13;
 import './AO.sol';
 import './bancor/solidity/contracts/BancorChanger.sol';
+import './Balances.sol';
 import './Safe.sol';
+import './SafeMath.sol';
 
 /**
 
@@ -30,15 +32,24 @@ import './Safe.sol';
 
 
 contract Safecontroller {
+    using SafeMath for uint;
+
     AO safeToken;
     BancorChanger bancorChanger;
 
     address etherReserve;
 
-    uint256 constant FEEMULTIPLIER = 100;
+    uint constant FEEMULTIPLIER = 100;
+    uint constant MAX_USERS = 1000;
+    
+    struct Vault {
+        address balances;
+        uint safeTokenReserves;
+        uint wFee;
+    }
 
-    mapping(address => address) vaultAddress;
-    mapping(address => uint256) weiHeld;
+    mapping(address => Vault) vaultAddress;
+    address[] users;
     
     function Safecontroller(address _safeToken,
                              address _bancorChanger) {
@@ -48,68 +59,96 @@ contract Safecontroller {
     function deployVault() 
         public
     {
-        require(vaultAddress[msg.sender] == 0x0);
+        assert(users.length < MAX_USERS);
+        assert(!searchUsers(msg.sender));
+        users.push(msg.sender);
 
-        Vault v = new Vault(msg.sender);
-        vaultAddress[msg.sender] = address(v);
+        // Creates the vault.
+        Balances b = new Balances(msg.sender);
+        Vault v = new Vault;
+        v.balances = address(b);
+        v.safeTokenReserves = 0;
+        v.wFee = 0;
 
-        VaultCreated(address(v), msg.sender);
+        vaultAddress[msg.sender] = v;
+
+        VaultCreated(msg.sender);
     }
 
+    /// Claim your AO held by the safecontroller
+    function claim() 
+        public
+    {
+        require(searchUsers(msg.sender));
+
+        var v = vaultAddress[msg.sender];
+        assert(v.safeTokenReserves > 0);
+
+        safeToken.transfer(v.balances, v.safeTokenReserves);
+        TokensClaimed();
+    }
+
+    /// User facing deposit function. MUST UPDATE THE WITHDRAWAL FEE.
     function deposit()
         public
         payable
     {
-        require(vaultAddress[msg.sender] != 0x0);
         require(msg.value > 0);
+        require(searchUsers(msg.sender));
+        var v = vaultAddress[msg.sender];
 
-        Vault vault = Vault(vaultAddress[msg.sender]);
+        Balances b = v.balances;
+        var oldBalance = b.queryBalance();
+        var newBalance = oldBalance.add(msg.value);
+        b.transfer(msg.value);
 
-        // Update state
-        weiHeld[vault] = weiHeld[vault].add(msg.value);
+        var oldFee = b.wFee;
+        var newFee = calcFee(newBalance);
 
-        assert(
-            vault.value(msg.value).call(bytes4(keccak256("deposit()")))
-        );
+        if (newFee < oldFee) {
+            b.wFee = oldFee;
+        } else {
+            b.wFee = newFee;
+        }
+
+        Deposit();
     }
 
     function withdraw()
         public
         payable
     {
-        require(vaultAddress[msg.sender] != 0x0);
+        require(searchUsers(msg.sender));
+        var v = vaultAddress[msg.sender];
 
-        require(msg.value == getWithdrawalFee());
+        assert(v.balances.queryBalance() > 0);
+        assert(v.safeTokenReserves == 0);
+        assert(v.wFee != 0);
+
+        safeToken.transferFrom(msg.sender, address(this), v.wFee);
+
+        v.balances.transferAll(msg.sender);
         
+        v.balances.destroy();
+        delete v.balances;
+        delete vaultAddress[msg.sender];
+    }
+
+    function calcFee()
+        public constant returns (uint)
+    {
 
     }
 
-    function getWithdrawalFee()
-        public constant returns (uint256)
+    function searchUsers(address _user)
+        public constant returns (bool)
     {
-        if (vaultAddress[msg.sender] == 0x0) {
-            revert();
+        for (var i = 0; i < users.length; ++i) {
+            if (_user == users[i]) {return true;}
         }
-
-        Vault vault = Vault(vaultAddress[msg.sender]);
-
-        // Check everything matches
-        assert(
-            vault.balance == weiHeld[vault]
-        );
-
-        uint256 safeTokenBalance = safeToken.balanceOf(vault);  
-
-        // Query the bancor changer
-        // Returns amount of ether expected return for AO
-        uint256 etherAmount = bancorChanger.getSaleReturn(etherReserve, safeTokenBalance);
-
-        uint256 totalHeld = vault.balance.add(etherAmount);
-
-        uint256 wFee = totalHeld.mul(FEEMULTIPLIER);
-
-        return wFee;
+        return false;
     }
 
     event VaultCreated(address indexed vaultAddress, address indexed owner);
+    event TokensClaimed();
 }
