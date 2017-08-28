@@ -7,19 +7,19 @@ import './SafeMath.sol';
 
 /**
 
-                                    [USER]
-                                    /     \
-                                   /       \
-                                  /         \
-                                 v           v
-    --------------       -----------         -----------------
-    | Data Store | ----> | SafeDao | <-----> | BancorChanger | 
-    --------------       -----------         -----------------
-                            /  \   
-                           /    \    etc.
-                          /      \
-                        _______  _______   
-                        |vault|  |vault| 
+                [USER]
+                /     \
+               /       \
+              /         \
+             v           v
+    -----------         -----------------
+    | SafeDao | <-----> | BancorChanger | 
+    -----------         -----------------
+        /  \   
+       /    \    etc.
+      /      \
+    _______  _______   
+    |vault|  |vault| 
 
     The fee for withdrawing is calculated at the time of your most recent deposit.
     The fee is determined by querying the Bancor protocol contract to retrieve the
@@ -116,7 +116,6 @@ contract Safecontroller {
 
     function withdraw()
         public
-        payable
     {
         require(searchUsers(msg.sender));
         var v = vaultAddress[msg.sender];
