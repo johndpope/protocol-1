@@ -1,6 +1,6 @@
 pragma solidity ^0.4.13;
 import './AO.sol';
-import './bancor/solidity/contracts/BancorChanger.sol';
+import './bancor_contracts/BancorChanger.sol';
 import './Balances.sol';
 import './Safe.sol';
 import './SafeMath.sol';
