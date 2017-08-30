@@ -13,13 +13,13 @@ financial institutions as an alternative way to store and earn on interest on va
    * SafeController contract is the contract which maintains the logic for managing Safecontracts in which tokens are deposited. 
    * Distribution of AO between network participants - deciding the penalty rates, etc. 
 
-    function createSafe() payable returns (address _safe)
+   ` function createSafe() payable returns (address _safe)
     {
         require(msg.sender != 0x0);
         Safe safe = new Safe(msg.sender);
         SafeCreated(msg.sender, address(safe), now);
         return address(safe);
-    }
+    }`
     * c
     * d
 
