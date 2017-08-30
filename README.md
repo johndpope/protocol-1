@@ -19,7 +19,8 @@ financial institutions as an alternative way to store and earn on interest on va
         Safe safe = new Safe(msg.sender);
         SafeCreated(msg.sender, address(safe), now);
         return address(safe);
-    }```
+    } ```
+    
     * c
     * d
 
