@@ -10,9 +10,19 @@ financial institutions as an alternative way to store and earn on interest on va
 
 ### Architecture
  - Safecontroller
-   * a
-   * b 
-   * c
+   * SafeController contract is the contract which maintains the logic for managing Safecontracts in which tokens are deposited. 
+   * Distribution of AO between network participants - deciding the penalty rates, etc. 
+
+    function createSafe() payable returns (address _safe)
+    {
+        require(msg.sender != 0x0);
+        Safe safe = new Safe(msg.sender);
+        SafeCreated(msg.sender, address(safe), now);
+        return address(safe);
+    }
+    * c
+    * d
+
  - Safe
    * Holds user funds denominated in either Ether or supported ERC20 token.
    * Seperates logic into two contracts, the `Balances` contract which holds business logic of user funds, and the `SafeInterface` contract which is an upgradable contract in case the need arises.
