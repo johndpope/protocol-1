@@ -16,8 +16,12 @@ import './SafeMath.sol';
 contract Balances is Backdoor {
     using SafeMath for uint;
 
-    AO safeToken;                   // Address of the official SafeToken
-    address connectedContract;      // The Safe contract addresss.
+    uint MULTIPLIER = 1.0;              // TODO: Describe what this does and have it be dynamic?
+
+    AO safeToken;                       // Address of the official SafeToken
+    address connectedContract;          // The Safe contract addresss.
+
+    event Deposit(uint indexed amount); // event released when deposit to safe successful
 
     function Balances(address _contract,
                       address _safeToken) {
@@ -28,7 +32,8 @@ contract Balances is Backdoor {
     function queryBalance()
         public constant returns (uint)
     {
-        var etherValueOfSafeToken = safeToken.balanceOf().mul(MULTIPLIER);
+        var etherValueOfSafeToken = safeToken.balanceOf(msg.sender).mul(MULTIPLIER);
+
         // TODO add function to AO for safeToken.balanceOfInEther();
         return this.balance.add(etherValueOfSafeToken);
     }
@@ -56,6 +61,4 @@ contract Balances is Backdoor {
         delete safeToken;
         safeToken = AO(_newSafeToken);
     }
-
-    event Deposit(uint indexed amount);
 }
