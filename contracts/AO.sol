@@ -1,10 +1,22 @@
 pragma solidity ^0.4.13;
-import './bancor_contracts/SmartToken.sol';
 import './Backdoor.sol';
+import './IRewardDAO.sol';
+import './bancor_contracts/SmartToken.sol';
 
 contract AO is SmartToken, Backdoor {
+    IRewardDAO rewardDAO;
 
     function AO() 
         SmartToken("SafeToken", "AO", 18)
     {}
+
+    function transfer(address _to, uint256 _value)
+        public 
+        transfersAllowed
+        returns (bool success)
+    {
+        assert(true); // TODO
+    }
+
+
 }

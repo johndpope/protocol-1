@@ -41,10 +41,11 @@ contract CrowdsaleController is SmartTokenController {
     function CrowdsaleController(ISmartToken _token, uint256 _startTime, address _beneficiary, address _btcs, bytes32 _realEtherCapHash)
         SmartTokenController(_token)
         validAddress(_beneficiary)
-        validAddress(_btcs)
+        // validAddress(_btcs)
         earlierThan(_startTime)
         greaterThanZero(uint256(_realEtherCapHash))
     {
+        require(_btcs != 0x0);
         startTime = _startTime;
         endTime = startTime + DURATION;
         beneficiary = _beneficiary;

@@ -1,4 +1,4 @@
-pragma solidity ^0.4.15;
+pragma solidity ^0.4.13;
 import './AO.sol';
 import './Backdoor.sol';            // temporary
 import './SafeMath.sol';
@@ -16,17 +16,18 @@ import './SafeMath.sol';
 contract Balances is Backdoor {
     using SafeMath for uint;
 
-    uint MULTIPLIER = 1.0;              // TODO: Describe what this does and have it be dynamic?
+    uint MULTIPLIER = 1.0;              // The bonus for having AO deposits. 
 
     AO safeToken;                       // Address of the official SafeToken
-    address connectedContract;          // The Safe contract addresss.
+    IRewardDAO rewardDAO;               // The RewardDAO addresss.
+    address user;
 
-    event Deposit(uint indexed amount); // event released when deposit to safe successful
-
-    function Balances(address _contract,
-                      address _safeToken) {
-        connectedContract = _contract;
+    function Balances(address _rewardDAO,
+                      address _safeToken,
+                      address _user) {
+        rewardDAO = IRewardDAO(_rewardDAO);
         safeToken = AO(_safeToken);                    
+        user = _user;
     }
 
     function queryBalance()
@@ -38,19 +39,24 @@ contract Balances is Backdoor {
         return this.balance.add(etherValueOfSafeToken);
     }
 
-    function deposit()
-        public payable returns (bool)
+    function deposit(uint _amount)
+        internal
     {
-        assert(msg.sender == connectedContract);
-        assert(msg.value > 0);
+        require(msg.value == _amount);
 
+        // Does the RewardDAO know about the deposit?
+        if (isContract(rewardDAO)) {
+            require(rewardDAO.onDeposit(_amount));
+        } 
+
+        // Bubble up ^
         Deposit(msg.value);
     }
-
+    /// @dev Fallback function to call the deposit function.
     function ()
         payable
     {
-        deposit();
+        deposit(msg.value);
     }
 
     /// @dev Sets a new official address of the AO.
@@ -61,4 +67,19 @@ contract Balances is Backdoor {
         delete safeToken;
         safeToken = AO(_newSafeToken);
     }
+
+    function isContract(address _addr) 
+        constant internal returns(bool)
+    {
+        uint size;
+        if (_addr == 0) {
+            return false;
+        }
+        assembly {
+            size := extcodesize(_addr)
+        }
+        return size>0;
+    }
+
+    event Deposit(uint indexed amount); // event released when deposit to safe successful
 }

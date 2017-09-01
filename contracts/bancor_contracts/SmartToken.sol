@@ -100,7 +100,11 @@ contract SmartToken is ISmartToken, Owned, ERC20Token, TokenHolder {
 
         @return true if the transfer was successful, false if it wasn't
     */
-    function transfer(address _to, uint256 _value) public transfersAllowed returns (bool success) {
+    function transfer(address _to, uint256 _value)
+        public 
+        transfersAllowed 
+        returns (bool success) 
+    {
         assert(super.transfer(_to, _value));
         return true;
     }

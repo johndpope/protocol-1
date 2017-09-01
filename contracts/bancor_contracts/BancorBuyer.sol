@@ -32,8 +32,9 @@ contract BancorBuyer is TokenHolder {
     */
     function BancorBuyer(IBancorChanger _changer, IEtherToken _etherToken)
         validAddress(_changer)
-        validAddress(_etherToken)
+        // validAddress(_etherToken)
     {
+        require(address(_etherToken) != 0x0);
         tokenChanger = _changer;
         etherToken = _etherToken;
 

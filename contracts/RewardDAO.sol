@@ -5,7 +5,6 @@ import './Balances.sol';
 import './SafeMath.sol';
 
 /**
-
                 [USER]
                 /     \
                /       \
@@ -29,14 +28,13 @@ import './SafeMath.sol';
     that straight up AO will hold a higher weight.
  */
 
-
-contract SafeController {
+contract RewardDAO {
     using SafeMath for uint;
 
     struct Vault {
         address balances;
         uint safeTokenReserves;
-        uint wFee;
+        uint withdrawalFee;
     }
 
     uint constant FEEMULTIPLIER = 100;
@@ -48,18 +46,18 @@ contract SafeController {
     mapping(address => Vault) addressToVaultMap;
     address[] users;
 
-    event Deposit(uint indexed amount); // TODO: This is repeated in the Balances contract: Choose one
+    event Deposit(uint indexed amount); 
+    // TODO: This is repeated in the Balances contract: Choose one
 
-    // TODO: Why are there separate addresses for the vault and the owner: isn't the valut created at the owner's addr?
-    event VaultCreated(address indexed vaultAddress); // , address indexed owner);
+    event VaultCreated(address indexed vaultAddress);
     event TokensClaimed();
     
-    function SafeController( address _safeToken,
-                             address _bancorChanger) {
-        // TODO: Actually implement the logic for the controller here
+    function RewardDAO(address _safeToken,
+                       address _bancorChanger) {
+        safeToken = AO(_safeToken);
+        bancorChanger = BancorChanger(_bancorChanger);
     }
 
-    // TODO: isn't the addressToVaultMap fully populated when it's instantiated? not sure if this function is necessary
     function deployVault() 
         public
     {
@@ -68,25 +66,15 @@ contract SafeController {
         users.push(msg.sender);
 
         // Creates the vault.
+        Balances b = new Balances(address(this), address(safeToken), msg.sender);
+        addressToVaultMap[msg.sender].balances = address(b);
+        addressToVaultMap[msg.sender].safeTokenReserves = 0;
+        addressToVaultMap[msg.sender].withdrawalFee = 0;
 
-        // TODO: Point the safe token to the address that we want to have in the Balances constructor
-        // TODO: This is ONLY here because we wanted the contract to successfully compile
-
-        address _safeToken = msg.sender;
-        Balances b = new Balances(msg.sender, safeToken);
-        // Vault v = Vault({
-        //     balances: address(b),
-        //     safeTokenReserves: 0,
-        //     wFee: 0
-        // });
-
-        // addressToVaultMap[msg.sender] = v;
-
-        addressToVaultMap[msg.sender].balances = b;
-        VaultCreated(msg.sender); //, address(addressToVaultMap[msg.sender]));
+        VaultCreated(msg.sender); 
     }
 
-    /// Claim your AO held by the safecontroller
+    /// @dev Claim your AO held by the safecontroller
     function claim() 
         public
     {
@@ -99,7 +87,7 @@ contract SafeController {
         TokensClaimed();
     }
 
-    /// User facing deposit function. MUST UPDATE THE WITHDRAWAL FEE.
+    /// @dev User facing deposit function. MUST UPDATE THE WITHDRAWAL FEE.
     function deposit()
         public
         payable
@@ -108,19 +96,12 @@ contract SafeController {
         require(searchUsers(msg.sender));
         var v = addressToVaultMap[msg.sender];
 
-        // TODO: This will be a separate refactor, since we can't pass around dynamic objects in the EVM (I think)
-        // TODO: This is why people use byte32 instead of strings -- we may have to serialize/deserialize the Balances
-        // TODO: object or do something along those lines
-
-        // Balances b = v.balances;
+        Balances b = Balances(v.balances);
         // var oldBalance = b.queryBalance();
         // var newBalance = oldBalance.add(msg.value);
-        // b.transfer(msg.value);
+        b.transfer(msg.value);
 
-        // TODO: Not sure what these wFees are supposed to be referring to, so I've just commented this out
-        // TODO: for now. Remove these commented lines and either integrate wFee into Balances or point elsewhere
-
-        // var oldFee = b.wFee;
+        // var oldFee = b.withdrawalFee;
         // var newFee = calcFee(newBalance);
 
         // if (newFee < oldFee) {
@@ -132,17 +113,17 @@ contract SafeController {
         Deposit(msg.value);
     }
 
+    // TODO: Implement snapshots on every block so we can keep track of people's
+    // overall stake in the system.
     function withdraw()
         public
     {
         require(searchUsers(msg.sender));
         var v = addressToVaultMap[msg.sender];
 
-        // TODO: Same as the prevent function comments
-
-        // assert(v.balances.queryBalance() > 0);
-        // assert(v.safeTokenReserves == 0);
-        // assert(v.wFee != 0);
+        assert(Balances(v.balances).queryBalance() > 0);
+        assert(v.safeTokenReserves == 0);
+        assert(v.withdrawalFee != 0);
 
         // safeToken.transferFrom(msg.sender, address(this), v.wFee);
 
@@ -156,7 +137,7 @@ contract SafeController {
     function calcFee()
         public constant returns (uint)
     {
-
+        
     }
 
     function searchUsers(address _user)
