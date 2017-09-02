@@ -8,6 +8,7 @@ import './SafeMath.sol';
 import './bancor_contracts/BancorChanger.sol';
 import './bancor_contracts/BancorFormula.sol';
 import './bancor_contracts/EtherToken.sol';
+import './bancor_contracts/IERC20Token.sol';
 
 /**
                 [USER]
@@ -38,7 +39,8 @@ contract RewardDAO is IRewardDAO {
 
     struct Vault {
         address balances;
-        uint safeTokenReserves;
+        uint unclaimedAO;
+        uint totalAO;
         uint withdrawalFee;
     }
 
@@ -55,6 +57,7 @@ contract RewardDAO is IRewardDAO {
     address etherReserve;
     mapping(address => Vault) addressToVaultMap;
     address[] users;
+    address[] knownTokens;
 
     event Deposit(uint indexed amount);  // TODO: This is repeated in the Balances contract: Choose one
     event VaultCreated(address indexed vaultAddress);
@@ -69,6 +72,9 @@ contract RewardDAO is IRewardDAO {
     function RewardDAO(address _safeToken) {
         safeToken = AO(_safeToken);
         etherToken = new EtherToken();
+        knownTokens.push(address(safeToken));
+        knownTokens.push(address(etherToken));
+
         bancorChanger = new BancorChanger(  safeToken,           // smartToken wrapper of AO token governed by contract
                                             new BancorFormula(), // conversion formula for exchange rate
                                             CHANGE_FEE,          // change fee used to liquidate from AO to ETH
@@ -89,7 +95,7 @@ contract RewardDAO is IRewardDAO {
         // Creates the vault.
         Balances b = new Balances(address(this), address(safeToken), msg.sender);
         addressToVaultMap[msg.sender].balances = address(b);
-        addressToVaultMap[msg.sender].safeTokenReserves = 0;
+        addressToVaultMap[msg.sender].unclaimedAO = 0;
         addressToVaultMap[msg.sender].withdrawalFee = 0;
 
         VaultCreated(msg.sender);
@@ -106,7 +112,7 @@ contract RewardDAO is IRewardDAO {
     {
         require(searchUsers(msg.sender));
         var v = addressToVaultMap[msg.sender];
-        return bancorChanger.getReturn(safeToken, etherToken, v.safeTokenReserves);
+        return bancorChanger.getReturn(safeToken, etherToken, v.unclaimedAO);
     }
 
     /**
@@ -118,28 +124,40 @@ contract RewardDAO is IRewardDAO {
         require(searchUsers(msg.sender));
 
         var v = addressToVaultMap[msg.sender];
-        assert(v.safeTokenReserves > 0);
+        assert(v.unclaimedAO > 0);
 
-        safeToken.transfer(v.balances, v.safeTokenReserves);
+        var claimAmount = v.unclaimedAO;
+        delete v.unclaimedAO;
+
+        v.totalAO = claimAmount;
+        safeToken.transfer(v.balances, claimAmount);
         TokensClaimed();
     }
 
     /**
         @dev user facing deposit function
         TODO: UPDATE THE WITHDRAWAL FEE.
+
+        @param _token   Address of the ERC20 token being deposited, or the ether wrapper
     */
-    function deposit()
+    function deposit(address _token, uint _amount)
         public
-        payable
     {
-        require(msg.value > 0);
-        require(searchUsers(msg.sender));
+        // Ensure that the RewardDAO is aware of the token
+        // being sent as a deposit.
+        require(search(_token, knownTokens));
+        token = IERC20Token(_token);
+
+        // Require that the user is registered with the RewardDAO.
+        require(search(msg.sender, users));
         var v = addressToVaultMap[msg.sender];
 
-        Balances b = Balances(v.balances);
-        var oldBalance = b.queryBalance();
-        var newBalance = oldBalance.add(msg.value);
-        b.transfer();
+        require(_amount > 0);
+        require(token.balanceOf(msg.sender) > _amount);
+
+        Balances bal = Balances(v.balances);
+        var oldBalance = bal.balanceOf(msg.sender);
+        var newBalance = oldBalance.add(_amount);
 
         var oldFee = v.withdrawalFee;
         var newFee = calcFee(newBalance);
@@ -148,7 +166,8 @@ contract RewardDAO is IRewardDAO {
         if (newFee < oldFee) { v.withdrawalFee = oldFee; }
         else                 { v.withdrawalFee = newFee; }
 
-        Deposit(msg.value);
+        token.transfer(_amount);
+        Deposit(_token, _amount, msg.sender);
     }
 
     /**
@@ -162,17 +181,17 @@ contract RewardDAO is IRewardDAO {
         var v = addressToVaultMap[msg.sender];
 
         assert(Balances(v.balances).queryBalance() > 0);
-        assert(v.safeTokenReserves == 0);
+        assert(v.unclaimedAO == 0);
         assert(v.withdrawalFee != 0);
 
         // require the withdrawer to pay some amount of money before transferring money to account
         safeToken.transferFrom(msg.sender, address(this), v.withdrawalFee);
-        safeToken.transferFrom(v.balances, msg.sender, v.safeTokenReserves);
+        safeToken.transferFrom(v.balances, msg.sender, v.unclaimedAO);
 
         // resets all the defaults in case anything goes wrong in deletion
-        addressToVaultMap[msg.sender].balances          = 0x0;
-        addressToVaultMap[msg.sender].safeTokenReserves = 0;
-        addressToVaultMap[msg.sender].withdrawalFee     = 0;
+        addressToVaultMap[msg.sender].balances      = 0x0;
+        addressToVaultMap[msg.sender].unclaimedAO   = 0;
+        addressToVaultMap[msg.sender].withdrawalFee = 0;
         delete addressToVaultMap[msg.sender];
     }
 
@@ -211,6 +230,30 @@ contract RewardDAO is IRewardDAO {
     function searchUsers(address _user) constant returns (bool) {
         for (uint i = 0; i < users.length; ++i) {
             if (_user == users[i]) {return true;}
+        }
+        return false;
+    }
+
+    /**
+        @dev Returns boolean of whether the token is known
+        
+        @param _token   Address of the token.
+        @return boolean (true) if token is known and (false) if not
+    */
+    function searchTokens(address _token)
+        constant returns (bool)
+    {
+        for (uint i = 0; i < knownTokens.length; ++i) {
+            if (_token == knownTokens[i]) {return true;}
+        }
+        return false;
+    }
+
+    function search(address _query, address[] _pool)
+        constant returns (bool)
+    {
+        for (uint i = 0; i < _pool.length; ++i) {
+            if (_query == _pool[i]) {return true;}
         }
         return false;
     }
