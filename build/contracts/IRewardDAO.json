@@ -3,6 +3,19 @@
   "abi": [
     {
       "constant": false,
+      "inputs": [],
+      "name": "getEthBalance",
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "constant": false,
       "inputs": [
         {
           "name": "_amount",
@@ -18,22 +31,10 @@
       ],
       "payable": false,
       "type": "function"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": false,
-          "name": "amount",
-          "type": "uint256"
-        }
-      ],
-      "name": "Log",
-      "type": "event"
     }
   ],
-  "unlinked_binary": "0x6060604052341561000f57600080fd5b5b60ce8061001e6000396000f300606060405263ffffffff7c01000000000000000000000000000000000000000000000000000000006000350416638287ccb48114603c575b600080fd5b3415604657600080fd5b604f6004356063565b604051901515815260200160405180910390f35b60005b7f909c57d5c6ac08245cf2a6de3900e2b868513fa59099b92b27d8db823d92df9c8260405190815260200160405180910390a15060015b9190505600a165627a7a72305820810a4ec6ecb9deb6809bf396aeb7f34b824adab871629fd15f75a03153b43e1a0029",
+  "unlinked_binary": "0x",
   "networks": {},
   "schema_version": "0.0.5",
-  "updated_at": 1504238588189
+  "updated_at": 1504361929855
 }
