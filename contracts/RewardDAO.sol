@@ -137,18 +137,16 @@ contract RewardDAO is IRewardDAO {
         var v = addressToVaultMap[msg.sender];
 
         Balances b = Balances(v.balances);
-        // var oldBalance = b.queryBalance();
-        // var newBalance = oldBalance.add(msg.value);
-        b.transfer(msg.value);
+        var oldBalance = b.queryBalance();
+        var newBalance = oldBalance.add(msg.value);
+        b.transfer();
 
-        // var oldFee = b.withdrawalFee;
-        // var newFee = calcFee(newBalance);
+        var oldFee = v.withdrawalFee;
+        var newFee = calcFee(newBalance);
 
-        // if (newFee < oldFee) {
-        //     b.wFee = oldFee;
-        // } else {
-        //     b.wFee = newFee;
-        // }
+        // set the vault fee to be maximum of the previous and updated fee
+        if (newFee < oldFee) { v.withdrawalFee = oldFee; }
+        else                 { v.withdrawalFee = newFee; }
 
         Deposit(msg.value);
     }
@@ -167,12 +165,14 @@ contract RewardDAO is IRewardDAO {
         assert(v.safeTokenReserves == 0);
         assert(v.withdrawalFee != 0);
 
-        // safeToken.transferFrom(msg.sender, address(this), v.wFee);
+        // require the withdrawer to pay some amount of money before transferring money to account
+        safeToken.transferFrom(msg.sender, address(this), v.withdrawalFee);
+        safeToken.transferFrom(v.balances, msg.sender, v.safeTokenReserves);
 
-        // v.balances.transferAll(msg.sender);
-
-        // v.balances.destroy();
-        // delete v.balances;
+        // resets all the defaults in case anything goes wrong in deletion
+        addressToVaultMap[msg.sender].balances          = 0x0;
+        addressToVaultMap[msg.sender].safeTokenReserves = 0;
+        addressToVaultMap[msg.sender].withdrawalFee     = 0;
         delete addressToVaultMap[msg.sender];
     }
 
@@ -195,9 +195,11 @@ contract RewardDAO is IRewardDAO {
     /**
         @dev calculates the withdrawal fee, as outlined in the whitepaper
         TODO: Add actual logic to determine the withdrawal fee
+
+        @param _balance     Balance in the vault for which a fee is being calculated
     */
-    function calcFee() constant returns (uint) {
-        
+    function calcFee(uint _balance) constant returns (uint) {
+        return 1;
     }
 
     /**
