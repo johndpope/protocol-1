@@ -53,6 +53,13 @@ contract Balances is Backdoor, IBalances {
         return this.balance.add(etherValueOfSafeToken);
     }
 
+    function transfer()
+        public
+        payable
+    {
+        deposit(msg.value);
+    }
+
     /** ----------------------------------------------------------------------------
         *                       Private helper functions                             *
         ---------------------------------------------------------------------------- */
@@ -60,14 +67,14 @@ contract Balances is Backdoor, IBalances {
     /**
         @dev fallback function to call the deposit function
     */
-    function ()
+    /** function ()
         payable
     {
         deposit(msg.value);
-    }
+    } */
 
     /**
-        @dev desposits specified amount into
+        @dev deposits specified amount into
 
         @param  _amount      Amount (in safeTokens) being deposited into the vault
         @return boolean success of the deposit
