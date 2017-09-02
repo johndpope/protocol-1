@@ -16,7 +16,7 @@ import './SafeMath.sol';
 contract Balances is Backdoor {
     using SafeMath for uint;
 
-    uint MULTIPLIER = 1.0;              // The bonus for having AO deposits. 
+    uint MULTIPLIER = 1.0;              // The bonus for having AO deposits.
 
     AO safeToken;                       // Address of the official SafeToken
     IRewardDAO rewardDAO;               // The RewardDAO addresss.
@@ -78,7 +78,7 @@ contract Balances is Backdoor {
         assembly {
             size := extcodesize(_addr)
         }
-        return size>0;
+        return size > 0;
     }
 
     event Deposit(uint indexed amount); // event released when deposit to safe successful
