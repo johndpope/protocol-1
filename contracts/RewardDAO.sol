@@ -50,6 +50,8 @@ contract RewardDAO is IRewardDAO {
 
     AO safeToken;
     BancorChanger bancorChanger;
+    EtherToken etherToken;              // ERC20 wrapper of the ETH token to allow interactions with Bancor
+
     address etherReserve;
     mapping(address => Vault) addressToVaultMap;
     address[] users;
@@ -58,24 +60,25 @@ contract RewardDAO is IRewardDAO {
     event VaultCreated(address indexed vaultAddress);
     event TokensClaimed();
     event Log(uint amount);
-    
+
+    /**
+        @dev constructor
+
+        @param  _safeToken      Address of the account from where safeTokens are being issued
+    */
     function RewardDAO(address _safeToken) {
         safeToken = AO(_safeToken);
+        etherToken = new EtherToken();
         bancorChanger = new BancorChanger(  safeToken,           // smartToken wrapper of AO token governed by contract
-                                            new BancorFormula(),     // conversion formula for exchange rate
+                                            new BancorFormula(), // conversion formula for exchange rate
                                             CHANGE_FEE,          // change fee used to liquidate from AO to ETH
-                                            new EtherToken(),        // marking ETH as our reserve coin
+                                            etherToken,          // marking ETH as our reserve coin
                                             CRR);                // ETH reserve ratio
     }
 
-    function onDeposit(uint _amount) public
-        returns (bool)
-    {
-        assert(true); // TODO
-        Log(_amount);
-        return true;
-    }
-
+    /**
+        @dev deploys vault onto blockchain, creating associated balance for vault
+    */
     function deployVault() 
         public
     {
@@ -97,15 +100,18 @@ contract RewardDAO is IRewardDAO {
 
         @return Supply of ETH in the message sender's vault
     */
-    function getEthBalance() public
+    function getEthBalance()
+        public
         returns (uint)
     {
         require(searchUsers(msg.sender));
         var v = addressToVaultMap[msg.sender];
-        return bancorChanger.getReturn(safeToken, new EtherToken(), v.safeTokenReserves);
+        return bancorChanger.getReturn(safeToken, etherToken, v.safeTokenReserves);
     }
 
-    /// @dev Claim your AO held by the RewardDAO
+    /**
+        @dev claim your AO held by the RewardDAO by transferring funds in the the safe to balance
+    */
     function claim()
         public
     {
@@ -118,7 +124,10 @@ contract RewardDAO is IRewardDAO {
         TokensClaimed();
     }
 
-    /// @dev User facing deposit function. MUST UPDATE THE WITHDRAWAL FEE.
+    /**
+        @dev user facing deposit function
+        TODO: UPDATE THE WITHDRAWAL FEE.
+    */
     function deposit()
         public
         payable
@@ -144,8 +153,10 @@ contract RewardDAO is IRewardDAO {
         Deposit(msg.value);
     }
 
-    // TODO: Implement snapshots on every block so we can keep track of people's
-    // overall stake in the system.
+    /**
+        @dev withdraws entirety of the vault into user's balance and destroys the vault
+        TODO: Implement snapshots on every block so we can keep track of people's overall stake in the system.
+    */
     function withdraw()
         public
     {
@@ -159,21 +170,43 @@ contract RewardDAO is IRewardDAO {
         // safeToken.transferFrom(msg.sender, address(this), v.wFee);
 
         // v.balances.transferAll(msg.sender);
-        
+
         // v.balances.destroy();
         // delete v.balances;
         delete addressToVaultMap[msg.sender];
     }
 
-    function calcFee()
-        public constant returns (uint)
-    {
+    /** ----------------------------------------------------------------------------
+        *                       Private helper functions                             *
+        ---------------------------------------------------------------------------- */
+
+    /**
+        @dev arbitrates the deposits into Balances
+
+        @param  _amount      Amount (in safeTokens) being deposited into the vault
+        @return boolean success of the deposit
+    */
+    function onDeposit(uint _amount) returns (bool) {
+        assert(true); // TODO
+        Log(_amount);
+        return true;
+    }
+
+    /**
+        @dev calculates the withdrawal fee, as outlined in the whitepaper
+        TODO: Add actual logic to determine the withdrawal fee
+    */
+    function calcFee() constant returns (uint) {
         
     }
 
-    function searchUsers(address _user)
-        public constant returns (bool)
-    {
+    /**
+        @dev returns whether or not the specified user exists in the list of registered users
+
+        @param  _user      Address of the user being investigated
+        @return  boolean indicating if the user was found (true) or not (false)
+    */
+    function searchUsers(address _user) constant returns (bool) {
         for (uint i = 0; i < users.length; ++i) {
             if (_user == users[i]) {return true;}
         }
