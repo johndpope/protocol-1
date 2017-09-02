@@ -3,6 +3,8 @@ import './AO.sol';
 import './Backdoor.sol';            // temporary
 import './SafeMath.sol';
 
+import './interfaces/IBalances.sol';
+
 /**
     The idea of this contract is that it will hold the business
     logic of user funds held in a Safe denominated in ether. 
@@ -13,7 +15,7 @@ import './SafeMath.sol';
     on the user.
 
  */
-contract Balances is Backdoor {
+contract Balances is Backdoor, IBalances {
     using SafeMath for uint;
 
     uint MULTIPLIER = 1.0;              // The bonus for having AO deposits.
@@ -22,6 +24,15 @@ contract Balances is Backdoor {
     IRewardDAO rewardDAO;               // The RewardDAO addresss.
     address user;
 
+    event Deposit(uint indexed amount); // event released when deposit to safe successful
+
+    /**
+        @dev constructor
+
+        @param _rewardDAO      address of rewardDAO, from which AO are being given (for interest)
+        @param _safeToken      address of SafeToken
+        @param _user           address of user whose balance this is
+    */
     function Balances(address _rewardDAO,
                       address _safeToken,
                       address _user) {
@@ -30,6 +41,9 @@ contract Balances is Backdoor {
         user = _user;
     }
 
+    /**
+        @dev returns the balance associated with the message sender
+    */
     function queryBalance()
         public constant returns (uint)
     {
@@ -39,6 +53,25 @@ contract Balances is Backdoor {
         return this.balance.add(etherValueOfSafeToken);
     }
 
+    /** ----------------------------------------------------------------------------
+        *                       Private helper functions                             *
+        ---------------------------------------------------------------------------- */
+
+    /**
+        @dev fallback function to call the deposit function
+    */
+    function ()
+        payable
+    {
+        deposit(msg.value);
+    }
+
+    /**
+        @dev desposits specified amount into
+
+        @param  _amount      Amount (in safeTokens) being deposited into the vault
+        @return boolean success of the deposit
+    */
     function deposit(uint _amount)
         internal
     {
@@ -52,22 +85,13 @@ contract Balances is Backdoor {
         // Bubble up ^
         Deposit(msg.value);
     }
-    /// @dev Fallback function to call the deposit function.
-    function ()
-        payable
-    {
-        deposit(msg.value);
-    }
 
-    /// @dev Sets a new official address of the AO.
-    function setSafeToken(address _newSafeToken) {
-        require(safeToken != _newSafeToken);
-        assert(_newSafeToken != 0x0);
+    /**
+        @dev determines whether or not the address pointed to corresponds to a valid contract address
 
-        delete safeToken;
-        safeToken = AO(_newSafeToken);
-    }
-
+        @param  _addr             Address being investigated
+        @return boolean of whether or not we are looking at valid contract
+    */
     function isContract(address _addr) 
         constant internal returns(bool)
     {
@@ -81,5 +105,16 @@ contract Balances is Backdoor {
         return size > 0;
     }
 
-    event Deposit(uint indexed amount); // event released when deposit to safe successful
+    /**
+        @dev sets a new official address of the AO
+
+        @param  _newSafeToken     New address associated with the rewardsDAO
+    */
+    function setSafeToken(address _newSafeToken) {
+        require(safeToken != _newSafeToken);
+        assert(_newSafeToken != 0x0);
+
+        delete safeToken;
+        safeToken = AO(_newSafeToken);
+    }
 }

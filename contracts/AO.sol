@@ -9,14 +9,4 @@ contract AO is SmartToken, Backdoor {
     function AO() 
         SmartToken("SafeToken", "AO", 18)
     {}
-
-    function transfer(address _to, uint256 _value)
-        public 
-        transfersAllowed
-        returns (bool success)
-    {
-        assert(true); // TODO
-    }
-
-
 }
