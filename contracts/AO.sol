@@ -1,4 +1,4 @@
-pragma solidity ^0.4.13;
+pragma solidity ^0.4.15;
 import './Backdoor.sol';
 import './interfaces/IRewardDAO.sol';
 import './bancor_contracts/SmartToken.sol';

@@ -1,4 +1,4 @@
-pragma solidity ^0.4.13;
+pragma solidity ^0.4.15;
 import './interfaces/IRewardDAO.sol';
 
 import './AO.sol';
@@ -8,7 +8,7 @@ import './SafeMath.sol';
 import './bancor_contracts/BancorChanger.sol';
 import './bancor_contracts/BancorFormula.sol';
 import './bancor_contracts/EtherToken.sol';
-import './bancor_contracts/IERC20Token.sol';
+import './bancor_contracts/interfaces/IERC20Token.sol';
 
 /**
                 [USER]
@@ -215,7 +215,7 @@ contract RewardDAO is IRewardDAO {
              public-facing function.
 
         @param _vault The address for the vault to be determined. 
-        @param _balance The new balance of token to calculate with.
+        @param _newBalance The new balance of token to calculate with.
         @param _token The address of the token which was deposited
         @return The new withdrawal fee to be paid. 
     */
