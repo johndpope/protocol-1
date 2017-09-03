@@ -135,7 +135,7 @@ contract RewardDAO is IRewardDAO {
         // Ensure that the RewardDAO is aware of the token
         // being sent as a deposit.
         require(search(_token, knownTokens));
-        token = IERC20Token(_token);
+        IERC20Token token = IERC20Token(_token);
 
         // Require that the user is registered with the RewardDAO.
         require(search(msg.sender, users));

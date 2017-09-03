@@ -29,9 +29,9 @@ contract Balances is Backdoor, IBalances {
     /**
         @dev constructor
 
-        @param _rewardDAO      address of rewardDAO, from which AO are being given (for interest)
-        @param _safeToken      address of SafeToken
-        @param _user           address of user whose balance this is
+        @param _rewardDAO The RewardDAO address.
+        @param _safeToken The SafeToken address.
+        @param _user      The user address, whose balances these are.
     */
     function Balances(address _rewardDAO,
                       address _safeToken,
@@ -41,48 +41,25 @@ contract Balances is Backdoor, IBalances {
         user = _user;
     }
 
-    /**
-        @dev returns the balance associated with the message sender
-    */
-    function queryBalance()
-        public constant returns (uint)
-    {
-        var etherValueOfSafeToken = safeToken.balanceOf(msg.sender).mul(MULTIPLIER);
-
-        // TODO add function to AO for safeToken.balanceOfInEther();
-        return this.balance.add(etherValueOfSafeToken);
+    modifier onlyRewardDAO() {
+        assert(msg.sender == address(rewardDAO));
+        _;
     }
 
-    function transfer()
-        public
-        payable
-    {
-        deposit(msg.value);
-    }
-
-    /** ----------------------------------------------------------------------------
-        *                       Private helper functions                             *
-        ---------------------------------------------------------------------------- */
-
     /**
-        @dev fallback function to call the deposit function
+        @dev Deposits said token into the balance.
+             Must be called from the known RewardDAO contract.
     */
-    /** function ()
-        payable
+    function deposit(address _token)
+        onlyRewardDAO
     {
-        deposit(msg.value);
-    } */
-
-    /**
-        @dev deposits specified amount into
-
-        @param  _amount      Amount (in safeTokens) being deposited into the vault
-        @return boolean success of the deposit
-    */
-    function deposit(uint _amount)
-        internal
-    {
-        require(msg.value == _amount);
+        // TODO: Decide if it's necessary to have the RewardDAO call
+        //       this function to deposit tokens into the balances 
+        //       contract. Or, can we keep the current implementation
+        //       and just transferFrom the RewardDAO? I think it would
+        //       be smarter to have users only approve their own balances
+        //       instead of the RewardDAO in the case of hacks, only the 
+        //       unclaimed AO would be at risk. 
 
         // Does the RewardDAO know about the deposit?
         if (isContract(rewardDAO)) {
@@ -92,6 +69,29 @@ contract Balances is Backdoor, IBalances {
         // Bubble up ^
         Deposit(msg.value);
     }
+
+    function withdraw(address _user) 
+        onlyRewardDAO
+    {
+        // TODO: Similar concerns as above. I believe this would be the right
+        //       way to go about it but it needs more thought behind it. We could 
+        //       do the verification checks in the RewardDAO function that calls this
+        //       one. And then in here do something like:
+        assert(_user == user);
+        // TODO: Right now it would be most straight forward to do a complete
+        //       withdrawal, but we should keep thinking about ways to eventually
+        //       implement incrementally withdrawals. Anyway, I digress the main point
+        //       is that we might need to store the tokens in RewardDAO and the balances,
+        //       and then verify that the address array store of both RewardDAO and Balances
+        //       is the same... Maybe we should extract out another contract for this,
+        //       something like "VerifiedTokens.sol" or "SupportedTokens.sol" so that
+        //       we can share this information across the two contracts as well as shortening
+        //       the current implementation of RewardDAO.
+    }
+
+    /** ----------------------------------------------------------------------------
+        *                       Private helper functions                             *
+        ---------------------------------------------------------------------------- */
 
     /**
         @dev determines whether or not the address pointed to corresponds to a valid contract address
