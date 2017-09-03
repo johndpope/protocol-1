@@ -3,6 +3,7 @@ import './interfaces/IRewardDAO.sol';
 
 import './AO.sol';
 import './Balances.sol';
+import './KnownTokens.sol';
 import './SafeMath.sol';
 
 import './bancor_contracts/BancorChanger.sol';
@@ -50,14 +51,11 @@ contract RewardDAO is IRewardDAO {
     uint32 constant CHANGE_FEE = 10000; // 1%  : Bancor change fee for token conversion
     uint32 constant CRR = 250000;       // 25% : reserve ratio of ETH to AO for Bancor in PPM
 
-    AO safeToken;
-    BancorChanger bancorChanger;
-    EtherToken etherToken;              // ERC20 wrapper of the ETH token to allow interactions with Bancor
+    BancorChanger bancorChanger; // TODO make this of type IBancorChanger to facilitate future upgrades
 
     address etherReserve;
     mapping(address => Vault) addressToVaultMap;
     address[] users;
-    address[] knownTokens;
 
     // TODO: This is repeated in the Balances contract: Choose one
     event Deposit(address token, uint amount, address sender);
