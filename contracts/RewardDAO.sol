@@ -56,6 +56,8 @@ contract RewardDAO is IRewardDAO {
     address etherReserve;
     mapping(address => Vault) addressToVaultMap;
     address[] users;
+    
+    address knownTokens;
 
     // TODO: This is repeated in the Balances contract: Choose one
     event Deposit(address token, uint amount, address sender);
@@ -71,14 +73,16 @@ contract RewardDAO is IRewardDAO {
     function RewardDAO(address _safeToken) {
         safeToken = AO(_safeToken);
         etherToken = new EtherToken();
-        knownTokens.push(address(safeToken));
-        knownTokens.push(address(etherToken));
 
         bancorChanger = new BancorChanger(  safeToken,           // smartToken wrapper of AO token governed by contract
                                             new BancorFormula(), // conversion formula for exchange rate
                                             CHANGE_FEE,          // change fee used to liquidate from AO to ETH
                                             etherToken,          // marking ETH as our reserve coin
                                             CRR);                // ETH reserve ratio
+
+        knownTokens = new KnownTokens(  etherToken, 
+                                        safeToken, 
+                                        bancorChanger);
     }
 
     /**

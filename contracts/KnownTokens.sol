@@ -30,7 +30,12 @@ contract KnownTokens {
         knownTokens.push(safeToken);
     }
 
-
+    function recoverPrice(address _token1, address _token2)
+        constant returns (uint)
+    {
+        var res = priceDiscovery[token1][token2].//TODO
+        return res;
+    }
 
     // function addToken(address _tokenAddr)
 }
