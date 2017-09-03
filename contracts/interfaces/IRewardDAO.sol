@@ -4,6 +4,6 @@ contract IRewardDAO {
     function onDeposit(uint _amount) public returns (bool);
     function getEthBalance() public returns (uint);
     function claim() public;
-    function deposit() public payable;
+    function deposit(address _token, uint _amount) public payable;
     function withdraw() public;
 }
