@@ -59,7 +59,8 @@ contract RewardDAO is IRewardDAO {
     address[] users;
     address[] knownTokens;
 
-    event Deposit(uint indexed amount);  // TODO: This is repeated in the Balances contract: Choose one
+    // TODO: This is repeated in the Balances contract: Choose one
+    event Deposit(address token, uint amount, address sender);
     event VaultCreated(address indexed vaultAddress);
     event TokensClaimed();
     event Log(uint amount);
@@ -145,7 +146,7 @@ contract RewardDAO is IRewardDAO {
         require(token.balanceOf(msg.sender) > _amount);
 
         Balances bal = Balances(vault.balances);
-        var oldBalance = bal.balanceOf(msg.sender);
+        var oldBalance = bal.queryBalance(msg.sender);
         var newBalance = oldBalance.add(_amount);
 
         var oldFee = vault.withdrawalFee;
@@ -170,10 +171,10 @@ contract RewardDAO is IRewardDAO {
         require(search(msg.sender, users));
         
         var vault = addressToVaultMap[msg.sender];
-        // var bal = Balances(vault.balances);
-
+        var bal = Balances(vault.balances); // TODO: Is this the standard way of referring to an initialized balance?
         for (uint i = 0; i < knownTokens.length; ++i) {
-            if (vault.balances.balanceOf(_token[i]) > 0) {
+            // var tokenBalance = vault.balances.call(bytes4(keccak256("queryBalance(address)")), knownTokens[i]);
+            if (bal.queryBalance(knownTokens[i]) > 0) {
                 continue; // TODO change this, feels gross
             } else {
                 revert();
@@ -219,21 +220,20 @@ contract RewardDAO is IRewardDAO {
         @param _token The address of the token which was deposited
         @return The new withdrawal fee to be paid. 
     */
-    function calcFee(address _vault, uint _newBalance, address _token)
+    function calcFee(Vault _vault, uint _newBalance, address _token)
         private constant returns (uint)
     {
-        // token = IERC20(_token);
-        // var oldBal = token.balanceOf(_vault.balances);
-        // var oldFee = _vault.withdrawalFee;
-
         uint runningTotal;
+        // var vault = addressToVaultMap[_vault];
+        var token = IERC20Token(_token); // TODO: Is this the standard way of referring to an initialized contract?
+
         for (uint i = 0; i < knownTokens.length; ++i) {
             if ((knownTokens[i] == _token) &&
-                (_token == etherToken))
+                (token == etherToken))
             {
                 runningTotal.add(etherToken.balanceOf(_vault.balances));
             } else if ((knownTokens[i] == _token) &&
-                       (_token == safeToken))
+                       (token == safeToken))
             {
                 // TODO query bancorchanger
                 var etherRepresentationOfSafeTokenHeld = 

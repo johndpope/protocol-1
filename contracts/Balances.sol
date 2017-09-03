@@ -63,7 +63,7 @@ contract Balances is Backdoor, IBalances {
 
         // Does the RewardDAO know about the deposit?
         if (isContract(rewardDAO)) {
-            require(rewardDAO.onDeposit(_amount));
+            require(rewardDAO.onDeposit(msg.value));
         } 
 
         // Bubble up ^
@@ -87,6 +87,18 @@ contract Balances is Backdoor, IBalances {
         //       something like "VerifiedTokens.sol" or "SupportedTokens.sol" so that
         //       we can share this information across the two contracts as well as shortening
         //       the current implementation of RewardDAO.
+    }
+
+    /**
+        @dev Returns the balance (in AO) associated with the Balance account associated with
+             the account specified
+
+        @param _account                    Account for which Balance amount to be read
+    */
+    function queryBalance(address _account)
+        public constant returns (uint)
+    {
+        return safeToken.balanceOf(_account).mul(MULTIPLIER);
     }
 
     /** ----------------------------------------------------------------------------
