@@ -76,17 +76,17 @@ contract RewardDAO is IRewardDAO {
         knownTokens.push(address(safeToken));
         knownTokens.push(address(etherToken));
 
-        bancorChanger = new BancorChanger(  safeToken,           // smartToken wrapper of AO token governed by contract
+        /* bancorChanger = new BancorChanger(  safeToken,           // smartToken wrapper of AO token governed by contract
                                             new BancorFormula(), // conversion formula for exchange rate
                                             CHANGE_FEE,          // change fee used to liquidate from AO to ETH
                                             etherToken,          // marking ETH as our reserve coin
-                                            CRR);                // ETH reserve ratio
+                                            CRR);                // ETH reserve ratio */
     }
 
     /**
         @dev deploys vault onto blockchain, creating associated balance for vault
     */
-    function deployVault() 
+    function deployVault()
         public
     {
         assert(users.length < MAX_USERS);
@@ -169,13 +169,14 @@ contract RewardDAO is IRewardDAO {
         public
     {
         require(search(msg.sender, users));
-        
+
         var vault = addressToVaultMap[msg.sender];
         var bal = Balances(vault.balances); // TODO: Is this the standard way of referring to an initialized balance?
         for (uint i = 0; i < knownTokens.length; ++i) {
             // var tokenBalance = vault.balances.call(bytes4(keccak256("queryBalance(address)")), knownTokens[i]);
             if (bal.queryBalance(knownTokens[i]) > 0) {
-                continue; // TODO change this, feels gross
+                // TODO: Add in the transfer function here to transfer EACH safeToken
+                continue;
             } else {
                 revert();
             }
@@ -215,10 +216,10 @@ contract RewardDAO is IRewardDAO {
              Private function in which all the variable have already been checked for accuracy in the calling
              public-facing function.
 
-        @param _vault The address for the vault to be determined. 
+        @param _vault The address for the vault to be determined.
         @param _newBalance The new balance of token to calculate with.
         @param _token The address of the token which was deposited
-        @return The new withdrawal fee to be paid. 
+        @return The new withdrawal fee to be paid.
     */
     function calcFee(Vault _vault, uint _newBalance, address _token)
         private constant returns (uint)
@@ -236,7 +237,7 @@ contract RewardDAO is IRewardDAO {
                        (token == safeToken))
             {
                 // TODO query bancorchanger
-                var etherRepresentationOfSafeTokenHeld = 
+                var etherRepresentationOfSafeTokenHeld =
                         bancorChanger.getReturn(safeToken, etherToken, _newBalance);
                 runningTotal.add(
                     etherRepresentationOfSafeTokenHeld
