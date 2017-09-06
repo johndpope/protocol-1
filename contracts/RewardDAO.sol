@@ -69,18 +69,15 @@ contract RewardDAO is IRewardDAO {
         @dev constructor
 
         @param  _safeToken      Address of the account from where safeTokens are being issued
+        @param  _bancorChanger  Address of the BancorChanger contract
+        @param  _etherToken     Address of the ERC20 ETH wrapper distributor
     */
-    function RewardDAO(address _safeToken) {
+    function RewardDAO(address _safeToken, address _bancorChanger, address _etherToken) {
         safeToken = AO(_safeToken);
-        etherToken = new EtherToken();
-        knownTokens.push(address(safeToken));
-        knownTokens.push(address(etherToken));
+        bancorChanger = BancorChanger(_bancorChanger);
 
-        /* bancorChanger = new BancorChanger(  safeToken,           // smartToken wrapper of AO token governed by contract
-                                            new BancorFormula(), // conversion formula for exchange rate
-                                            CHANGE_FEE,          // change fee used to liquidate from AO to ETH
-                                            etherToken,          // marking ETH as our reserve coin
-                                            CRR);                // ETH reserve ratio */
+        knownTokens.push(address(safeToken));
+        knownTokens.push(address(_etherToken));
     }
 
     /**
@@ -135,7 +132,7 @@ contract RewardDAO is IRewardDAO {
     {
         // Ensure that the RewardDAO is aware of the token
         // being sent as a deposit.
-        // require(search(_token, knownTokens));
+        require(search(_token, knownTokens));
         IERC20Token token = IERC20Token(_token);
 
         // Require that the user is registered with the RewardDAO.
