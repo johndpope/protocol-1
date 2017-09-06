@@ -1,9 +1,12 @@
 pragma solidity ^0.4.15;
 import './interfaces/IRewardDAO.sol';
 
+import './interfaces/IKnownTokens.sol';
+
 import './AO.sol';
 import './Balances.sol';
 import './SafeMath.sol';
+import './KnownTokens.sol';
 
 import './bancor_contracts/BancorChanger.sol';
 import './bancor_contracts/BancorFormula.sol';
@@ -50,14 +53,13 @@ contract RewardDAO is IRewardDAO {
     uint32 constant CHANGE_FEE = 10000; // 1%  : Bancor change fee for token conversion
     uint32 constant CRR = 250000;       // 25% : reserve ratio of ETH to AO for Bancor in PPM
 
-    AO safeToken;
-    BancorChanger bancorChanger;
-    EtherToken etherToken;              // ERC20 wrapper of the ETH token to allow interactions with Bancor
+    AO safeToken;                // TODO: Remove this, since all the transfers will be within the Balances
+    BancorChanger bancorChanger; // TODO make this of type IBancorChanger to facilitate future upgrades
+    IKnownTokens knownTokens;
 
     address etherReserve;
     mapping(address => Vault) addressToVaultMap;
     address[] users;
-    address[] knownTokens;
 
     // TODO: This is repeated in the Balances contract: Choose one
     event Deposit(address token, uint amount, address sender);
@@ -73,11 +75,10 @@ contract RewardDAO is IRewardDAO {
         @param  _etherToken     Address of the ERC20 ETH wrapper distributor
     */
     function RewardDAO(address _safeToken, address _bancorChanger, address _etherToken) {
-        safeToken = AO(_safeToken);
-        bancorChanger = BancorChanger(_bancorChanger);
-
-        knownTokens.push(address(safeToken));
-        knownTokens.push(address(_etherToken));
+        safeToken   = AO(_safeToken);
+        knownTokens = new KnownTokens(  _etherToken,
+                                        safeToken,
+                                        bancorChanger);
     }
 
     /**
@@ -132,7 +133,7 @@ contract RewardDAO is IRewardDAO {
     {
         // Ensure that the RewardDAO is aware of the token
         // being sent as a deposit.
-        require(search(_token, knownTokens));
+        require(knownTokens.containsToken(_token));
         IERC20Token token = IERC20Token(_token);
 
         // Require that the user is registered with the RewardDAO.
@@ -176,6 +177,8 @@ contract RewardDAO is IRewardDAO {
         safeToken.transferFrom(msg.sender, address(this), vault.withdrawalFee);
 
         // transfer all the tokens associated with the balance to the user account
+
+        /* TODO: Change this since we are no longer using the list representation of the knownTokens
         for (uint i = 0; i < knownTokens.length; ++i) {
             var tokenBalance = bal.queryBalance(knownTokens[i]);
             if (tokenBalance > 0) {
@@ -186,7 +189,7 @@ contract RewardDAO is IRewardDAO {
             else {
                 revert(); // TODO: Why are we reverting if any of the knownTokens have a balance of 0??
             }
-        }
+        } */
 
         // resets all the defaults in case anything goes wrong in deletion
         addressToVaultMap[msg.sender].balances      = 0x0;
