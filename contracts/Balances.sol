@@ -6,38 +6,30 @@ import './SafeMath.sol';
 import './interfaces/IBalances.sol';
 
 /**
-    The idea of this contract is that it will hold the business
-    logic of user funds held in a Safe denominated in ether. 
-    (Eventually supported ERC20 tokens as well.) We do this in
-    order to isolate user funds from the higher level interface
-    of the Safe in case we need to upgrade the Safe contract in
-    the future we can do so with minimal impact (ideally, no impact)
-    on the user.
-
+    Balances.sol is in charge of holding user funds. It is alternatively
+    known as the "Savings Contract."
  */
 contract Balances is Backdoor, IBalances {
     using SafeMath for uint;
 
-    uint MULTIPLIER = 1.0;              // The bonus for having AO deposits.
-
-    AO safeToken;                       // Address of the official SafeToken
+    AO saveToken;                       // Address of the official Save Token
     IRewardDAO rewardDAO;               // The RewardDAO addresss.
     address user;
 
-    event Deposit(uint indexed amount); // event released when deposit to safe successful
+    event Deposit(uint indexed amount); // Event of successful deposit.
 
     /**
         @dev constructor
 
         @param _rewardDAO The RewardDAO address.
-        @param _safeToken The SafeToken address.
+        @param _safeToken The Save Token address.
         @param _user      The user address, whose balances these are.
     */
     function Balances(address _rewardDAO,
-                      address _safeToken,
+                      address _saveToken,
                       address _user) {
         rewardDAO = IRewardDAO(_rewardDAO);
-        safeToken = AO(_safeToken);                    
+        saveToken = AO(_saveToken);                    
         user = _user;
     }
 
@@ -50,30 +42,23 @@ contract Balances is Backdoor, IBalances {
         @dev Deposits said token into the balance.
              Must be called from the known RewardDAO contract.
 
-         @param _user     Address of the user whose safe deposit is being added to
+         @param _user     Address of the user whose savings contract is being added to
          @param _token    Address of the ERC20 token being deposited, or the ether wrapper
-         @param _amount   Amount of said token being deposited into safe
+         @param _amount   Amount of said token being deposited into savings contract
     */
     function deposit(address _user, address _token, uint _amount)
         onlyRewardDAO
     {
-        // TODO: Decide if it's necessary to have the RewardDAO call
-        //       this function to deposit tokens into the balances 
-        //       contract. Or, can we keep the current implementation
-        //       and just transferFrom the RewardDAO? I think it would
-        //       be smarter to have users only approve their own balances
-        //       instead of the RewardDAO in the case of hacks, only the 
-        //       unclaimed AO would be at risk. 
-
         require(isContract(rewardDAO));
         require(msg.sender == address(rewardDAO));
 
         IERC20Token token = IERC20Token(_token);
         token.transferFrom(_user, address(this), _amount);
-        assert(rewardDAO.onDeposit(_amount));
-        Deposit(msg.value);
+        assert(rewardDAO.onDeposit(_amount)); // TODO: Double check if we need this
+        Deposit(_amount, _token);             // TODO: Double check if we need this
     }
 
+    // TODO: Implementation
     function withdraw(address _user) 
         onlyRewardDAO
     {
@@ -94,15 +79,14 @@ contract Balances is Backdoor, IBalances {
     }
 
     /**
-        @dev Returns the balance (in AO) associated with the Balance account associated with
-             the account specified
+        @dev Returns the balance (in AO) of the Savings Contract associated with user
 
-        @param _account                    Account for which Balance amount to be read
+        @param _user User for which Balance amount to be read.
     */
     function queryBalance(address _account)
         public constant returns (uint)
     {
-        return safeToken.balanceOf(_account).mul(MULTIPLIER);
+        return saveToken.balanceOf(_account);
     }
 
     /** ----------------------------------------------------------------------------
@@ -131,13 +115,13 @@ contract Balances is Backdoor, IBalances {
     /**
         @dev sets a new official address of the AO
 
-        @param  _newSafeToken     New address associated with the rewardsDAO
+        @param  _newSaveToken New address associated with the RewardDAO.
     */
-    function setSafeToken(address _newSafeToken) {
-        require(safeToken != _newSafeToken);
-        assert(_newSafeToken != 0x0);
+    function setSaveToken(address _newSaveToken) {
+        require(saveToken != _newSaveToken);
+        assert(_newSaveToken != 0x0);
 
-        delete safeToken;
-        safeToken = AO(_newSafeToken);
+        delete saveToken;
+        saveToken = AO(_newSaveToken);
     }
 }

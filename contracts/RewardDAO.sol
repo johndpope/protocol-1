@@ -14,29 +14,8 @@ import './bancor_contracts/EtherToken.sol';
 import './bancor_contracts/interfaces/IERC20Token.sol';
 
 /**
-                [USER]
-                /     \
-               /       \
-              /         \
-             v           v
-    -----------         -----------------
-    | SafeDao | <-----> | BancorChanger | 
-    -----------         -----------------
-        /  \   
-       /    \    etc.
-      /      \
-    _______  _______   
-    |vault|  |vault| 
-
-    The fee for withdrawing is calculated at the time of your most recent deposit.
-    The fee is determined by querying the Bancor protocol contract to retrieve the
-    most recent exchange rate of AO -> Eth, then calculates the Eth balance in the user
-    safe and adds the amount being deposited. Thereafter it sets the withdrawal fee equal
-    to the current valuation of the safe in AO and divides it by 100.
-    TODO: in the future we will add a 1.25x multiplier to the AO held in the safe, this means 
-    that straight up AO will hold a higher weight.
+    RewardDAO autonomous interest yielding solution to cryptocurrency banking.
  */
-
 contract RewardDAO is IRewardDAO {
     using SafeMath for uint;
 
@@ -53,69 +32,69 @@ contract RewardDAO is IRewardDAO {
     uint32 constant CHANGE_FEE = 10000; // 1%  : Bancor change fee for token conversion
     uint32 constant CRR = 250000;       // 25% : reserve ratio of ETH to AO for Bancor in PPM
 
-    AO safeToken;                // TODO: Remove this, since all the transfers will be within the Balances
+    AO saveToken;                // TODO: Remove this, since all the transfers will be within the Balances
     BancorChanger bancorChanger; // TODO make this of type IBancorChanger to facilitate future upgrades
     IKnownTokens knownTokens;
 
     address etherReserve;
-    mapping(address => Vault) addressToVaultMap;
+    mapping(address => Vault) addressToSCMap;
     address[] users;
 
-    event VaultCreated(address indexed vaultAddress);
+    event SavingsContractCreated(address indexed savingsContractAddress);
     event TokensClaimed();
     event Log(uint amount);
 
     /**
         @dev constructor
 
-        @param  _safeToken      Address of the account from where safeTokens are being issued
-        @param  _bancorChanger  Address of the BancorChanger contract
-        @param  _etherToken     Address of the ERC20 ETH wrapper distributor
+        @param  _saveToken      Address of the account from where saveTokens are being issued.
+        @param  _bancorChanger  Address of the BancorChanger contract.
+        @param  _etherToken     Address of the ERC20 ETH wrapper distributor.
     */
-    function RewardDAO(address _safeToken, address _bancorChanger, address _etherToken) {
-        safeToken   = AO(_safeToken);
+    function RewardDAO(address _saveToken, address _bancorChanger, address _etherToken) {
+        saveToken = AO(_saveToken);
         knownTokens = new KnownTokens(  _etherToken,
-                                        safeToken,
+                                        saveToken,
                                         bancorChanger);
     }
 
     /**
         @dev deploys vault onto blockchain, creating associated balance for vault
     */
-    function deployVault()
+    function deploySavingsContract()
         public
     {
         assert(users.length < MAX_USERS);
         assert(!search(msg.sender, users));
         users.push(msg.sender);
 
-        // Creates the vault.
-        Balances b = new Balances(address(this), address(safeToken), msg.sender);
-        addressToVaultMap[msg.sender].balances = address(b);
-        addressToVaultMap[msg.sender].unclaimedAO = 0;
-        addressToVaultMap[msg.sender].withdrawalFee = 0;
+        // Creates the SavingsContract.
+        Balances b = new Balances(address(this), address(saveToken), msg.sender);
+        addressToSCMap[msg.sender].balances = address(b);
+        addressToSCMap[msg.sender].unclaimedAO = 0;
+        addressToSCMap[msg.sender].withdrawalFee = 0;
 
-        VaultCreated(msg.sender);
+        SavingsContractCreated(msg.sender);
     }
 
     /**
-        @dev claim your AO held by the RewardDAO by transferring funds in the the safe to balance
+        @dev claim your AO held by the RewardDAO by transferring funds in the the save to balance
     */
     function claim()
         public
     {
         require(search(msg.sender, users));
 
-        var vault = addressToVaultMap[msg.sender];
-        assert(vault.unclaimedAO > 0);
+        var sc = addressToSCMap[msg.sender];
+        assert(sc.unclaimedAO > 0);
 
-        var claimAmount = vault.unclaimedAO;
-        delete vault.unclaimedAO;
+        var claimAmount = sc.unclaimedAO;
+        delete sc.unclaimedAO;
 
-        var oldTotalAO = vault.totalAO;
-        vault.totalAO = oldTotalAO.add(claimAmount);
+        var oldTotalAO = sc.totalAO;
+        sc.totalAO = oldTotalAO.add(claimAmount);
 
-        safeToken.transfer(vault.balances, claimAmount);
+        saveToken.transfer(sc.balances, claimAmount);
 
         TokensClaimed();
     }
@@ -125,7 +104,7 @@ contract RewardDAO is IRewardDAO {
         TODO: UPDATE THE WITHDRAWAL FEE.
 
          @param _token    Address of the ERC20 token being deposited, or the ether wrapper
-         @param _amount   Amount of said token being deposited into safe
+         @param _amount   Amount of said token being deposited into save
     */
     function deposit(address _token, uint _amount)
         public
@@ -136,23 +115,23 @@ contract RewardDAO is IRewardDAO {
 
         // Require that the user is registered with the RewardDAO.
         require(search(msg.sender, users));
-        var vault = addressToVaultMap[msg.sender];
+        var sc = addressToSCMap[msg.sender];
 
         IERC20Token token = IERC20Token(_token);
         require(_amount > 0);
         assert(token.balanceOf(msg.sender) > _amount);
 
-        Balances bal = Balances(vault.balances);
+        Balances bal = Balances(sc.balances);
         var oldBalance = bal.queryBalance(msg.sender);
         var newBalance = oldBalance.add(_amount);
 
-        var oldFee = vault.withdrawalFee;
-        var newFee = calcFee(vault, newBalance, _token);
+        var oldFee = sc.withdrawalFee;
+        var newFee = calcFee(sc, newBalance, _token);
 
         // TODO: Double check this
-        // set the vault fee to be maximum of the previous and updated fee
-        if (newFee < oldFee) { vault.withdrawalFee = oldFee; }
-        else                 { vault.withdrawalFee = newFee; }
+        // set the sc fee to be maximum of the previous and updated fee
+        if (newFee < oldFee) { sc.withdrawalFee = oldFee; }
+        else                 { sc.withdrawalFee = newFee; }
 
         bal.deposit(msg.sender, _token, _amount);
     }
@@ -166,13 +145,13 @@ contract RewardDAO is IRewardDAO {
     {
         require(search(msg.sender, users));
 
-        var vault = addressToVaultMap[msg.sender];
-        var bal = Balances(vault.balances);
+        var sc = addressToSCMap[msg.sender];
+        var bal = Balances(sc.balances);
 
         // require the withdrawer to pay some amount of money before transferring money to account
-        assert(vault.unclaimedAO == 0);
-        assert(vault.withdrawalFee != 0);
-        safeToken.transferFrom(msg.sender, address(this), vault.withdrawalFee);
+        assert(sc.unclaimedAO == 0);
+        assert(sc.withdrawalFee != 0);
+        saveToken.transferFrom(msg.sender, address(this), sc.withdrawalFee);
 
         // transfer all the tokens associated with the balance to the user account
 
@@ -190,10 +169,10 @@ contract RewardDAO is IRewardDAO {
         } */
 
         // resets all the defaults in case anything goes wrong in deletion
-        addressToVaultMap[msg.sender].balances      = 0x0;
-        addressToVaultMap[msg.sender].unclaimedAO   = 0;
-        addressToVaultMap[msg.sender].withdrawalFee = 0;
-        delete addressToVaultMap[msg.sender];
+        addressToSCMap[msg.sender].balances      = 0x0;
+        addressToSCMap[msg.sender].unclaimedAO   = 0;
+        addressToSCMap[msg.sender].withdrawalFee = 0;
+        delete addressToSCMap[msg.sender];
     }
 
     /** ----------------------------------------------------------------------------
@@ -203,7 +182,7 @@ contract RewardDAO is IRewardDAO {
     /**
         @dev arbitrates the deposits into Balances
 
-        @param  _amount      Amount (in safeTokens) being deposited into the vault
+        @param  _amount      Amount (in saveTokens) being deposited into the vault
         @return boolean success of the deposit
     */
     function onDeposit(uint _amount) returns (bool) {
@@ -234,13 +213,13 @@ contract RewardDAO is IRewardDAO {
             {
                 runningTotal.add(etherToken.balanceOf(_vault.balances));
             } else if ((knownTokens[i] == _token) &&
-                       (token == safeToken))
+                       (token == saveToken))
             {
                 // TODO query bancorchanger
-                var etherRepresentationOfSafeTokenHeld =
-                        bancorChanger.getReturn(safeToken, etherToken, _newBalance);
+                var etherRepresentationOfsaveTokenHeld =
+                        bancorChanger.getReturn(saveToken, etherToken, _newBalance);
                 runningTotal.add(
-                    etherRepresentationOfSafeTokenHeld
+                    etherRepresentationOfsaveTokenHeld
                 );
             } else {
                 revert();
@@ -254,7 +233,7 @@ contract RewardDAO is IRewardDAO {
         private constant returns (uint) { return 1; }
 
     /**
-        @dev Returns the amount of money in the safe associated with the message sender in ETH
+        @dev Returns the amount of money in the save associated with the message sender in ETH
 
         @return Supply of ETH in the message sender's vault
     */
@@ -264,7 +243,7 @@ contract RewardDAO is IRewardDAO {
     // {
     //     require(search(msg.sender, users));
     //     var v = addressToVaultMap[msg.sender];
-    //     return bancorChanger.getReturn(safeToken, etherToken, vault.unclaimedAO);
+    //     return bancorChanger.getReturn(saveToken, etherToken, vault.unclaimedAO);
     // }
 
     /**

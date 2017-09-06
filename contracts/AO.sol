@@ -4,13 +4,13 @@ import './interfaces/IRewardDAO.sol';
 import './bancor_contracts/SmartToken.sol';
 
 /**
-    The SafeToken (AO) is our implementation of the Smart Token with
+    The Save Token (AO) is our implementation of the Smart Token with
     the addition of the ERC23 token fallback function employed.
  */
 contract AO is SmartToken, Backdoor {
     IRewardDAO rewardDAO;
 
     function AO()
-        SmartToken("SafeToken", "AO", 18)
+        SmartToken("Save Token", "AO", 18)
     {}
 }

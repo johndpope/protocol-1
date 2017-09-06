@@ -8,35 +8,35 @@ import './interfaces/IKnownTokens.sol';
 import './bancor_contracts/interfaces/ITokenChanger.sol';
 
 /**
-    KnownTokens.sol is a shared data store contract between the RewardDao
+    KnownTokens.sol is a shared data store contract between the RewardDAO
     and the user Balances. It allows for a central store for both
     contracts to call access from, and (TODO) opens an API to add
-    more supported tokens to the Safecontract network.
+    more supported tokens to the TokenBnk protocol.
  */
 contract KnownTokens is IKnownTokens {
     EtherToken etherToken;  
-    AO safeToken;
+    AO saveToken;
     ITokenChanger tokenChanger;
 
     //    EG. priceDiscovery[token1][token2].exchangeRate();
     mapping(address => mapping(address => IPriceDiscovery)) priceDiscoveryMap;
 
-    // We add in etherToken and safeToken as defaults to the network. (TODO) In
+    // We add in etherToken and saveToken as defaults to the network. (TODO) In
     // the future we will use this contract to make it easy to add more supported
-    // tokens to the Safecontract network.
+    // tokens to the TokenBnk protocol.
     address[] public knownTokens;
 
     /**
         @dev constructor
 
         @param  _etherToken     Address of the ERC20 ETH wrapper distributor
-        @param  _safeToken      Address of the AO token
+        @param  _saveToken      Address of the AO token
         @param  _tokenChanger   Address of the token changer (i.e. Bancor changer)
 
     */
-    function KnownTokens(address _etherToken, address _safeToken, address _tokenChanger) {
+    function KnownTokens(address _etherToken, address _saveToken, address _tokenChanger) {
         addToken(_etherToken);
-        addToken(_safeToken);
+        addToken(_saveToken);
         tokenChanger = ITokenChanger(_tokenChanger);
     }
 
@@ -70,7 +70,7 @@ contract KnownTokens is IKnownTokens {
             var fromNewToken = new PriceDiscovery(_newTokenAddr, knownTokens[i]);
             priceDiscoveryMap[_newTokenAddr][knownTokens[i]] = fromNewToken;
 
-            var toNewToken   = new PriceDiscovery(knownTokens[i], _newTokenAddr);
+            var toNewToken = new PriceDiscovery(knownTokens[i], _newTokenAddr);
             priceDiscoveryMap[knownTokens[i]][_newTokenAddr] = toNewToken;
         }
 
