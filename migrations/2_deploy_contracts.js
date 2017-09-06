@@ -25,7 +25,7 @@ module.exports = async (deployer) => {
             EtherToken.address,
             250000);
 
-    deployer.deploy(RewardDAO, BancorChanger.address, EtherToken.address);
+    deployer.deploy(RewardDAO, AO.address, BancorChanger.address, EtherToken.address);
     if (debug) {
         deployer.deploy(Balances);
     }

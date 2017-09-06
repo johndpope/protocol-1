@@ -61,8 +61,6 @@ contract RewardDAO is IRewardDAO {
     mapping(address => Vault) addressToVaultMap;
     address[] users;
 
-    // TODO: This is repeated in the Balances contract: Choose one
-    event Deposit(address token, uint amount, address sender);
     event VaultCreated(address indexed vaultAddress);
     event TokensClaimed();
     event Log(uint amount);
@@ -126,7 +124,8 @@ contract RewardDAO is IRewardDAO {
         @dev user facing deposit function
         TODO: UPDATE THE WITHDRAWAL FEE.
 
-        @param _token   Address of the ERC20 token being deposited, or the ether wrapper
+         @param _token    Address of the ERC20 token being deposited, or the ether wrapper
+         @param _amount   Amount of said token being deposited into safe
     */
     function deposit(address _token, uint _amount)
         public
@@ -134,14 +133,14 @@ contract RewardDAO is IRewardDAO {
         // Ensure that the RewardDAO is aware of the token
         // being sent as a deposit.
         require(knownTokens.containsToken(_token));
-        IERC20Token token = IERC20Token(_token);
 
         // Require that the user is registered with the RewardDAO.
         require(search(msg.sender, users));
         var vault = addressToVaultMap[msg.sender];
 
+        IERC20Token token = IERC20Token(_token);
         require(_amount > 0);
-        require(token.balanceOf(msg.sender) > _amount);
+        assert(token.balanceOf(msg.sender) > _amount);
 
         Balances bal = Balances(vault.balances);
         var oldBalance = bal.queryBalance(msg.sender);
@@ -155,8 +154,7 @@ contract RewardDAO is IRewardDAO {
         if (newFee < oldFee) { vault.withdrawalFee = oldFee; }
         else                 { vault.withdrawalFee = newFee; }
 
-        token.transferFrom(msg.sender, vault.balances, _amount);
-        Deposit(_token, _amount, msg.sender);
+        bal.deposit(msg.sender, _token, _amount);
     }
 
     /**
