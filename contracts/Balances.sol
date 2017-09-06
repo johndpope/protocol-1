@@ -49,8 +49,12 @@ contract Balances is Backdoor, IBalances {
     /**
         @dev Deposits said token into the balance.
              Must be called from the known RewardDAO contract.
+
+         @param _user     Address of the user whose safe deposit is being added to
+         @param _token    Address of the ERC20 token being deposited, or the ether wrapper
+         @param _amount   Amount of said token being deposited into safe
     */
-    function deposit(address _token)
+    function deposit(address _user, address _token, uint _amount)
         onlyRewardDAO
     {
         // TODO: Decide if it's necessary to have the RewardDAO call
@@ -61,12 +65,12 @@ contract Balances is Backdoor, IBalances {
         //       instead of the RewardDAO in the case of hacks, only the 
         //       unclaimed AO would be at risk. 
 
-        // Does the RewardDAO know about the deposit?
-        if (isContract(rewardDAO)) {
-            require(rewardDAO.onDeposit(msg.value));
-        } 
+        require(isContract(rewardDAO));
+        require(msg.sender == address(rewardDAO));
 
-        // Bubble up ^
+        IERC20Token token = IERC20Token(_token);
+        token.transferFrom(_user, address(this), _amount);
+        assert(rewardDAO.onDeposit(_amount));
         Deposit(msg.value);
     }
 
