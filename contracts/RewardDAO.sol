@@ -135,7 +135,7 @@ contract RewardDAO is IRewardDAO {
     {
         // Ensure that the RewardDAO is aware of the token
         // being sent as a deposit.
-        require(search(_token, knownTokens));
+        // require(search(_token, knownTokens));
         IERC20Token token = IERC20Token(_token);
 
         // Require that the user is registered with the RewardDAO.
@@ -157,7 +157,7 @@ contract RewardDAO is IRewardDAO {
         if (newFee < oldFee) { vault.withdrawalFee = oldFee; }
         else                 { vault.withdrawalFee = newFee; }
 
-        token.transferFrom(msg.sender, address(bal), _amount);
+        token.transferFrom(msg.sender, vault.balances, _amount);
         Deposit(_token, _amount, msg.sender);
     }
 
@@ -171,22 +171,25 @@ contract RewardDAO is IRewardDAO {
         require(search(msg.sender, users));
 
         var vault = addressToVaultMap[msg.sender];
-        var bal = Balances(vault.balances); // TODO: Is this the standard way of referring to an initialized balance?
-        for (uint i = 0; i < knownTokens.length; ++i) {
-            // var tokenBalance = vault.balances.call(bytes4(keccak256("queryBalance(address)")), knownTokens[i]);
-            if (bal.queryBalance(knownTokens[i]) > 0) {
-                // TODO: Add in the transfer function here to transfer EACH safeToken
-                continue;
-            } else {
-                revert();
-            }
-        }
-        assert(vault.unclaimedAO == 0);
-        assert(vault.withdrawalFee != 0);
+        var bal = Balances(vault.balances);
 
         // require the withdrawer to pay some amount of money before transferring money to account
+        assert(vault.unclaimedAO == 0);
+        assert(vault.withdrawalFee != 0);
         safeToken.transferFrom(msg.sender, address(this), vault.withdrawalFee);
-        safeToken.transferFrom(vault.balances, msg.sender, vault.unclaimedAO);
+
+        // transfer all the tokens associated with the balance to the user account
+        for (uint i = 0; i < knownTokens.length; ++i) {
+            var tokenBalance = bal.queryBalance(knownTokens[i]);
+            if (tokenBalance > 0) {
+                IERC20Token token = IERC20Token(knownTokens[i]);
+                token.transferFrom(vault.balances, msg.sender, tokenBalance);
+            }
+
+            else {
+                revert(); // TODO: Why are we reverting if any of the knownTokens have a balance of 0??
+            }
+        }
 
         // resets all the defaults in case anything goes wrong in deletion
         addressToVaultMap[msg.sender].balances      = 0x0;
@@ -220,13 +223,12 @@ contract RewardDAO is IRewardDAO {
         @param _newBalance The new balance of token to calculate with.
         @param _token The address of the token which was deposited
         @return The new withdrawal fee to be paid.
-    */
+
     function calcFee(Vault _vault, uint _newBalance, address _token)
         private constant returns (uint)
     {
         uint runningTotal;
-        // var vault = addressToVaultMap[_vault];
-        var token = IERC20Token(_token); // TODO: Is this the standard way of referring to an initialized contract?
+        var token = IERC20Token(_token);
 
         for (uint i = 0; i < knownTokens.length; ++i) {
             if ((knownTokens[i] == _token) &&
@@ -248,7 +250,10 @@ contract RewardDAO is IRewardDAO {
         }
 
         return runningTotal;
-    }
+    } */
+
+    function calcFee(Vault _vault, uint _newBalance, address _token)
+        private constant returns (uint) { return 1; }
 
     /**
         @dev Returns the amount of money in the safe associated with the message sender in ETH
