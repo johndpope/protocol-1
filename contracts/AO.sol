@@ -10,7 +10,7 @@ import './bancor_contracts/SmartToken.sol';
 contract AO is SmartToken, Backdoor {
     IRewardDAO rewardDAO;
 
-    function AO() 
+    function AO()
         SmartToken("SafeToken", "AO", 18)
     {}
 }
