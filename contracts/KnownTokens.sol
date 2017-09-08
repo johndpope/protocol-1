@@ -14,8 +14,6 @@ import './bancor_contracts/interfaces/ITokenChanger.sol';
     more supported tokens to the TokenBnk protocol.
  */
 contract KnownTokens is IKnownTokens {
-    EtherToken etherToken;  
-    AO saveToken;
     ITokenChanger tokenChanger;
 
     //    EG. priceDiscovery[token1][token2].exchangeRate();
@@ -24,20 +22,16 @@ contract KnownTokens is IKnownTokens {
     // We add in etherToken and saveToken as defaults to the network. (TODO) In
     // the future we will use this contract to make it easy to add more supported
     // tokens to the TokenBnk protocol.
-    address[] public knownTokens;
+    address[] knownTokensList;
 
     /**
         @dev constructor
 
-        @param  _etherToken     Address of the ERC20 ETH wrapper distributor
-        @param  _saveToken      Address of the AO token
         @param  _tokenChanger   Address of the token changer (i.e. Bancor changer)
 
     */
-    function KnownTokens(address _etherToken, address _saveToken, address _tokenChanger) {
-        addToken(_etherToken);
-        addToken(_saveToken);
-        tokenChanger = ITokenChanger(_tokenChanger);
+    function KnownTokens(ITokenChanger _tokenChanger) {
+        tokenChanger = _tokenChanger;
     }
 
     /**
@@ -66,15 +60,18 @@ contract KnownTokens is IKnownTokens {
         public
     {
         // TODO: implement additional features of the function
-        for (uint i = 0; i < knownTokens.length; ++i) {
-            var fromNewToken = new PriceDiscovery(_newTokenAddr, knownTokens[i]);
-            priceDiscoveryMap[_newTokenAddr][knownTokens[i]] = fromNewToken;
+        IERC20Token newToken = IERC20Token(_newTokenAddr);
+        for (uint i = 0; i < knownTokensList.length; ++i) {
+            IERC20Token knownToken = IERC20Token(knownTokensList[i]);
 
-            var toNewToken = new PriceDiscovery(knownTokens[i], _newTokenAddr);
-            priceDiscoveryMap[knownTokens[i]][_newTokenAddr] = toNewToken;
+            var fromNewToken = new PriceDiscovery(newToken, knownToken, tokenChanger);
+            priceDiscoveryMap[_newTokenAddr][knownTokensList[i]] = fromNewToken;
+
+            var toNewToken = new PriceDiscovery(knownToken, newToken, tokenChanger);
+            priceDiscoveryMap[knownTokensList[i]][_newTokenAddr] = toNewToken;
         }
 
-        knownTokens.push(_newTokenAddr);
+        knownTokensList.push(_newTokenAddr);
     }
 
     /**
@@ -86,8 +83,8 @@ contract KnownTokens is IKnownTokens {
     function containsToken(address _token)
         public constant returns (bool)
     {
-        for (uint i = 0; i < knownTokens.length; ++i) {
-            if (_token == knownTokens[i]) {return true;}
+        for (uint i = 0; i < knownTokensList.length; ++i) {
+            if (_token == knownTokensList[i]) {return true;}
         }
         return false;
     }

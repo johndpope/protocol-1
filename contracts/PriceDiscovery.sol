@@ -3,6 +3,7 @@ import './AO.sol';
 import './bancor_contracts/interfaces/IERC20Token.sol';
 
 import './interfaces/IPriceDiscovery.sol';
+import './bancor_contracts/interfaces/ITokenChanger.sol';
 
 /**
     PriceDiscovery.sol is a contract that dynamically tracks the exchange rates
@@ -13,6 +14,7 @@ import './interfaces/IPriceDiscovery.sol';
 contract PriceDiscovery is IPriceDiscovery {
     IERC20Token fromToken; // token conversion source
     IERC20Token toToken;   // token conversion destination
+    ITokenChanger tokenChanger;
 
     /**
         @dev constructor
@@ -21,9 +23,10 @@ contract PriceDiscovery is IPriceDiscovery {
         @param  _toToken      Address of the token being converted into
 
     */
-    function PriceDiscovery(address _fromToken, address _toToken) {
-        fromToken = IERC20Token(_fromToken);
-        toToken = IERC20Token(_toToken);
+    function PriceDiscovery(IERC20Token _fromToken, IERC20Token _toToken, ITokenChanger _tokenChanger) {
+        fromToken = _fromToken;
+        toToken   = _toToken;
+        tokenChanger = _tokenChanger;
     }
 
     /**
