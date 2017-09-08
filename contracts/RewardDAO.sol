@@ -29,14 +29,10 @@ contract RewardDAO is IRewardDAO {
     uint constant FEE_MULTIPLIER = 100;
     uint constant MAX_USERS = 1000;
 
-    uint32 constant CHANGE_FEE = 10000; // 1%  : Bancor change fee for token conversion
-    uint32 constant CRR = 250000;       // 25% : reserve ratio of ETH to AO for Bancor in PPM
-
     AO saveToken;                // TODO: Remove this, since all the transfers will be within the Balances
-    BancorChanger bancorChanger; // TODO make this of type IBancorChanger to facilitate future upgrades
+    ITokenChanger tokenChanger;  // TODO make this of type IBancorChanger to facilitate future upgrades
     IKnownTokens knownTokens;
 
-    address etherReserve;
     mapping(address => Vault) addressToSCMap;
     address[] users;
 
@@ -47,15 +43,17 @@ contract RewardDAO is IRewardDAO {
     /**
         @dev constructor
 
-        @param  _saveToken      Address of the account from where saveTokens are being issued.
-        @param  _bancorChanger  Address of the BancorChanger contract.
-        @param  _etherToken     Address of the ERC20 ETH wrapper distributor.
+        @param _tokenChanger    Address of a deployed TokenChanger contract (i.e. BancorChanger)
+        @param _saveToken       Address of the account from where saveTokens are being issued.
+        @param _knownTokens     Address of a deployed IKnownTokens contract (i.e. KnownTokens).
     */
-    function RewardDAO(address _saveToken, address _bancorChanger, address _etherToken) {
-        saveToken = AO(_saveToken);
-        knownTokens = new KnownTokens(  _etherToken,
-                                        saveToken,
-                                        bancorChanger);
+    function RewardDAO(ITokenChanger _tokenChanger, IKnownTokens _knownTokens, AO _saveToken, EtherToken _etherToken) {
+        tokenChanger = _tokenChanger;
+        saveToken    = _saveToken;
+        knownTokens  = _knownTokens;
+
+        knownTokens.addToken(address(_saveToken));
+        knownTokens.addToken(address(_etherToken));
     }
 
     /**
@@ -155,17 +153,10 @@ contract RewardDAO is IRewardDAO {
 
         // transfer all the tokens associated with the balance to the user account
 
-        /* TODO: Change this since we are no longer using the list representation of the knownTokens
-        for (uint i = 0; i < knownTokens.length; ++i) {
-            var tokenBalance = bal.queryBalance(knownTokens[i]);
-            if (tokenBalance > 0) {
-                IERC20Token token = IERC20Token(knownTokens[i]);
-                token.transferFrom(vault.balances, msg.sender, tokenBalance);
-            }
-
-            else {
-                revert(); // TODO: Why are we reverting if any of the knownTokens have a balance of 0??
-            }
+        // TODO: Put the below back in
+        /* address[] knownTokensList = knownTokens.getKnownTokensList();
+        for (uint i = 0; i < knownTokensList.length; ++i) {
+            bal.withdraw(msg.sender, knownTokensList[i]);
         } */
 
         // resets all the defaults in case anything goes wrong in deletion

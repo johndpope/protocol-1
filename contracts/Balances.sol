@@ -16,13 +16,14 @@ contract Balances is Backdoor, IBalances {
     IRewardDAO rewardDAO;               // The RewardDAO addresss.
     address user;
 
-    event Deposit(uint indexed amount); // Event of successful deposit.
+    event Deposit(uint indexed amount, address token); // Event of successful deposit.
+    event Withdraw(address token); // Event of successful withdrawal.
 
     /**
         @dev constructor
 
         @param _rewardDAO The RewardDAO address.
-        @param _safeToken The Save Token address.
+        @param _saveToken The Save Token address.
         @param _user      The user address, whose balances these are.
     */
     function Balances(address _rewardDAO,
@@ -50,7 +51,6 @@ contract Balances is Backdoor, IBalances {
         onlyRewardDAO
     {
         require(isContract(rewardDAO));
-        require(msg.sender == address(rewardDAO));
 
         IERC20Token token = IERC20Token(_token);
         token.transferFrom(_user, address(this), _amount);
@@ -58,8 +58,15 @@ contract Balances is Backdoor, IBalances {
         Deposit(_amount, _token);             // TODO: Double check if we need this
     }
 
-    // TODO: Implementation
-    function withdraw(address _user) 
+    /**
+        @dev Withdraws said token from the balance to the original token holder account.
+             Must be called from the known RewardDAO contract.
+
+         @param _user     Address of the user whose savings contract is being drawn from
+                          Must be the same as the owner of the safe/balance
+         @param _token    Address of the ERC20 token being deposited, or the ether wrapper
+    */
+    function withdraw(address _user, address _token)
         onlyRewardDAO
     {
         // TODO: Similar concerns as above. I believe this would be the right
@@ -76,12 +83,24 @@ contract Balances is Backdoor, IBalances {
         //       something like "VerifiedTokens.sol" or "SupportedTokens.sol" so that
         //       we can share this information across the two contracts as well as shortening
         //       the current implementation of RewardDAO.
+        require(isContract(rewardDAO));
+
+        var tokenBalance = queryBalance(_token);
+        if (tokenBalance > 0) {
+            IERC20Token token = IERC20Token(_token);
+            token.transferFrom(address(this), msg.sender, tokenBalance);
+        }
+        else {
+            revert(); // TODO: Why are we reverting if any of the knownTokens have a balance of 0??
+        }
+
+        Withdraw(_token);   // TODO: Double check if we need this
     }
 
     /**
         @dev Returns the balance (in AO) of the Savings Contract associated with user
 
-        @param _user User for which Balance amount to be read.
+        @param _account User for which Balance amount to be read.
     */
     function queryBalance(address _account)
         public constant returns (uint)
