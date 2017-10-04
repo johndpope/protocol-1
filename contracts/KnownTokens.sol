@@ -19,7 +19,7 @@ contract KnownTokens is IKnownTokens {
     //    EG. priceDiscovery[token1][token2].exchangeRate();
     mapping(address => mapping(address => IPriceDiscovery)) priceDiscoveryMap;
 
-    address[] public allKnownTokens;
+    address[20] public allKnownTokens;
 
     /**
         @dev constructor
@@ -69,6 +69,12 @@ contract KnownTokens is IKnownTokens {
         }
 
         allKnownTokens.push(_newTokenAddr);
+    }
+
+    function allTokens()
+        public constant returns (address[20])
+    {
+        return allKnownTokens;
     }
 
     /**

@@ -1,7 +1,9 @@
 pragma solidity ^0.4.15;
 import './BNK.sol';
+import './KnownTokens.sol';
 import './SafeMath.sol';
 
+import './bancor_contracts/interfaces/IERC20Token.sol';
 import './interfaces/IBalances.sol';
 
 /**
@@ -10,8 +12,9 @@ import './interfaces/IBalances.sol';
 contract Balances is IBalances {
     using SafeMath for uint;
 
-    BNK bnkToken;                       // Address of the BNK Token
+    BNK bnkToken;                        // Address of the BNK Token
     IRewardDAO rewardDAO;                // Address of the Reward DAO
+    KnownTokens knownTokens;
     address user;                        // Address of the user who owns funds in this contract
 
     /// Deposit Event for when a user sends funds
@@ -32,6 +35,7 @@ contract Balances is IBalances {
         rewardDAO = IRewardDAO(_rewardDAO);
         bnkToken = BNK(_bnkToken);                    
         user = _user;
+        knownTokens = _knownTokens;
     }
 
     modifier onlyRewardDAO() {
@@ -83,17 +87,18 @@ contract Balances is IBalances {
         //       we can share this information across the two contracts as well as shortening
         //       the current implementation of RewardDAO.
 
-        var tokenBalance = queryBalance(_token);
-        if (tokenBalance > 0) {
-            IERC20Token token = IERC20Token(_token);
-            token.transferFrom(address(this), msg.sender, tokenBalance);
-        }
-        else {
-            revert(); // TODO: Why are we reverting if any of the knownTokens have a balance of 0??
+        address[] memory tokens;
+        tokens = knownTokens.allTokens();
+        for (uint i = 0; i < tokens.length; ++i) {
+            IERC20Token token = IERC20Token(tokens[i]);
+            if (token.balanceOf(this) > 0) {
+                token.transfer(user, token.balanceOf(this));
+            }
         }
 
-        Withdraw(_token);   // TODO: Double check if we need this
     }
+
+    ///TODO add a function to switch out the known tokens contract.
 
     /**
         @dev Returns the balance (in BNK) of the Savings Contract associated with user

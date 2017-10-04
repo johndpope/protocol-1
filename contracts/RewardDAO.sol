@@ -1,6 +1,6 @@
 pragma solidity ^0.4.15;
-import './interfaces/IRewardDAO.sol';
 
+import './interfaces/IRewardDAO.sol';
 import './interfaces/IKnownTokens.sol';
 
 import './BNK.sol';
@@ -14,14 +14,14 @@ import './bancor_contracts/EtherToken.sol';
 import './bancor_contracts/interfaces/IERC20Token.sol';
 
 /**
-    RewardDAO autonomous interest yielding solution to cryptocurrency banking.
+ * @title Reward DAO
  */
 contract RewardDAO is IRewardDAO {
     using SafeMath for uint;
 
     struct Vault {
         address balances;
-        uint unclaimeDAO;
+        uint unclaimedBNK;
         uint totalBNK;
         uint withdrawalFee;
     }
@@ -31,7 +31,7 @@ contract RewardDAO is IRewardDAO {
 
     BNK bnkToken;                // TODO: Remove this, since all the transfers will be within the Balances
     ITokenChanger tokenChanger;  // TODO make this of type IBancorChanger to facilitate future upgrades
-    IKnownTokens knownTokens;
+    address[] knownTokens;
 
     mapping(address => Vault) addressToSCMap;
     address[] users;
@@ -45,19 +45,19 @@ contract RewardDAO is IRewardDAO {
 
         @param _tokenChanger    Address of a deployed TokenChanger contract (i.e. BancorChanger)
         @param _bnkToken       Address of the account from where bnkTokens are being issued.
-        @param _knownTokens     Address of a deployed IKnownTokens contract (i.e. KnownTokens).
     */
-    function RewardDAO(ITokenChanger _tokenChanger, IKnownTokens _knownTokens, BNK _bnkToken, EtherToken _etherToken) {
-        tokenChanger = _tokenChanger;
-        bnkToken    = _bnkToken;
-        knownTokens  = _knownTokens;
+    function RewardDAO(address _tokenChanger,
+                       address _bnkToken, 
+                       address _etherToken) {
+        tokenChanger = ITokenChanger(_tokenChanger);
+        bnkToken = BNK(_bnkToken);
 
-        knownTokens.addToken(address(_bnkToken));
-        knownTokens.addToken(address(_etherToken));
+        knownTokens.push(_etherToken);
+        knownTokens.push(_bnkToken);
     }
 
     /**
-        @dev deploys vault onto blockchain, creating associated balance for vault
+        @dev Creates a new Savings Contract
     */
     function deploySavingsContract()
         public
@@ -67,8 +67,8 @@ contract RewardDAO is IRewardDAO {
         users.push(msg.sender);
 
         // Creates the SavingsContract.
-        Balances b = new Balances(address(this), address(bnkToken), msg.sender);
-        addressToSCMap[msg.sender].balances = address(b);
+        Balances bal = new Balances(address(this), address(bnkToken), msg.sender);
+        addressToSCMap[msg.sender].balances = address(bal);
         addressToSCMap[msg.sender].unclaimeDAO = 0;
         addressToSCMap[msg.sender].withdrawalFee = 0;
 
