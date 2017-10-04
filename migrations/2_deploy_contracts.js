@@ -1,6 +1,6 @@
 /* global artifacts */
 
-const AO          = artifacts.require('AO.sol');
+const BNK          = artifacts.require('BNK.sol');
 const RewardDAO   = artifacts.require('RewardDAO.sol');
 const KnownTokens = artifacts.require('KnownTokens.sol');
 
@@ -14,15 +14,15 @@ const Balances = artifacts.require('Balances.sol');
 
 // constants used in the Bancor deployment for token exchanges
 const CHANGE_FEE = 10000; // 1%  : Bancor change fee for token conversion
-const CRR = 250000;       // 25% : reserve ratio of ETH to AO for Bancor in PPM
+const CRR = 250000;       // 25% : reserve ratio of ETH to BNK for Bancor in PPM
 
 module.exports = async (deployer) => {
-    await deployer.deploy(AO);
+    await deployer.deploy(BNK);
     await deployer.deploy(BancorFormula);
     await deployer.deploy(EtherToken);
 
     await deployer.deploy(BancorChanger,
-                AO.address,
+                BNK.address,
                 BancorFormula.address,
                 CHANGE_FEE,
                 EtherToken.address,
@@ -34,6 +34,6 @@ module.exports = async (deployer) => {
     deployer.deploy(RewardDAO,
                 BancorChanger.address,
                 KnownTokens.address,
-                AO.address,
+                BNK.address,
                 EtherToken.address);
 };

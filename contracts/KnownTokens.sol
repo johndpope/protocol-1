@@ -1,5 +1,5 @@
 pragma solidity ^0.4.15;
-import './AO.sol';
+import './BNK.sol';
 import './bancor_contracts/EtherToken.sol';
 import './PriceDiscovery.sol';
 
@@ -19,10 +19,7 @@ contract KnownTokens is IKnownTokens {
     //    EG. priceDiscovery[token1][token2].exchangeRate();
     mapping(address => mapping(address => IPriceDiscovery)) priceDiscoveryMap;
 
-    // We add in etherToken and saveToken as defaults to the network. (TODO) In
-    // the future we will use this contract to make it easy to add more supported
-    // tokens to the TokenBnk protocol.
-    address[] knownTokensList;
+    address[] public allKnownTokens;
 
     /**
         @dev constructor
@@ -59,19 +56,19 @@ contract KnownTokens is IKnownTokens {
     function addToken(address _newTokenAddr)
         public
     {
-        // TODO: implement additional features of the function
+        // TODO: NEEDS TO BE CHANGED DRASTICALLY
         IERC20Token newToken = IERC20Token(_newTokenAddr);
-        for (uint i = 0; i < knownTokensList.length; ++i) {
-            IERC20Token knownToken = IERC20Token(knownTokensList[i]);
+        for (uint i = 0; i < allKnownTokens.length; ++i) {
+            IERC20Token knownToken = IERC20Token(allKnownTokens[i]);
 
             var fromNewToken = new PriceDiscovery(newToken, knownToken, tokenChanger);
-            priceDiscoveryMap[_newTokenAddr][knownTokensList[i]] = fromNewToken;
+            priceDiscoveryMap[_newTokenAddr][allKnownTokens[i]] = fromNewToken;
 
             var toNewToken = new PriceDiscovery(knownToken, newToken, tokenChanger);
-            priceDiscoveryMap[knownTokensList[i]][_newTokenAddr] = toNewToken;
+            priceDiscoveryMap[allKnownTokens[i]][_newTokenAddr] = toNewToken;
         }
 
-        knownTokensList.push(_newTokenAddr);
+        allKnownTokens.push(_newTokenAddr);
     }
 
     /**
@@ -83,8 +80,8 @@ contract KnownTokens is IKnownTokens {
     function containsToken(address _token)
         public constant returns (bool)
     {
-        for (uint i = 0; i < knownTokensList.length; ++i) {
-            if (_token == knownTokensList[i]) {return true;}
+        for (uint i = 0; i < allKnownTokens.length; ++i) {
+            if (_token == allKnownTokens[i]) {return true;}
         }
         return false;
     }

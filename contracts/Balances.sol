@@ -1,61 +1,60 @@
 pragma solidity ^0.4.15;
-import './AO.sol';
-import './Backdoor.sol';            // temporary
+import './BNK.sol';
 import './SafeMath.sol';
 
 import './interfaces/IBalances.sol';
 
 /**
-    Balances.sol is in charge of holding user funds. It is alternatively
-    known as the "Savings Contract."
+ * Balances of user funds, alternatively known as the Savings Contract
  */
-contract Balances is Backdoor, IBalances {
+contract Balances is IBalances {
     using SafeMath for uint;
 
-    AO saveToken;                       // Address of the official Save Token
-    IRewardDAO rewardDAO;               // The RewardDAO addresss.
-    address user;
+    BNK bnkToken;                       // Address of the BNK Token
+    IRewardDAO rewardDAO;                // Address of the Reward DAO
+    address user;                        // Address of the user who owns funds in this contract
 
-    event Deposit(uint indexed amount, address token); // Event of successful deposit.
-    event Withdraw(address token); // Event of successful withdrawal.
+    /// Deposit Event for when a user sends funds
+    event Deposit(uint indexed amount, address token);
+    /// Withdrawal Event for when a user pays withdrawal fee and pulls funds
+    event Withdraw();
 
     /**
         @dev constructor
 
-        @param _rewardDAO The RewardDAO address.
-        @param _saveToken The Save Token address.
-        @param _user      The user address, whose balances these are.
+        @param _rewardDAO Address of the Reward DAO
+        @param _bnkToken  Address of BNK Token
+        @param _user      The user whose funds are stored in the contract
     */
     function Balances(address _rewardDAO,
-                      address _saveToken,
+                      address _bnkToken,
                       address _user) {
         rewardDAO = IRewardDAO(_rewardDAO);
-        saveToken = AO(_saveToken);                    
+        bnkToken = BNK(_bnkToken);                    
         user = _user;
     }
 
     modifier onlyRewardDAO() {
-        assert(msg.sender == address(rewardDAO));
+        require(msg.sender == address(rewardDAO));
+        require(isContract(rewardDAO));
         _;
     }
 
     /**
-        @dev Deposits said token into the balance.
-             Must be called from the known RewardDAO contract.
+        @dev Deposits a token into the user funds contract
 
          @param _user     Address of the user whose savings contract is being added to
-         @param _token    Address of the ERC20 token being deposited, or the ether wrapper
+         @param _token    Address of the ERC20 token being deposited, 0x0 for ether
          @param _amount   Amount of said token being deposited into savings contract
     */
     function deposit(address _user, address _token, uint _amount)
         onlyRewardDAO
     {
-        require(isContract(rewardDAO));
-
         IERC20Token token = IERC20Token(_token);
         token.transferFrom(_user, address(this), _amount);
-        assert(rewardDAO.onDeposit(_amount)); // TODO: Double check if we need this
-        Deposit(_amount, _token);             // TODO: Double check if we need this
+
+        require(rewardDAO.onDeposit(_amount)); // TODO: Implement this? 
+        Deposit(_amount, _token);
     }
 
     /**
@@ -66,7 +65,7 @@ contract Balances is Backdoor, IBalances {
                           Must be the same as the owner of the safe/balance
          @param _token    Address of the ERC20 token being deposited, or the ether wrapper
     */
-    function withdraw(address _user, address _token)
+    function withdraw(address _user)
         onlyRewardDAO
     {
         // TODO: Similar concerns as above. I believe this would be the right
@@ -83,7 +82,6 @@ contract Balances is Backdoor, IBalances {
         //       something like "VerifiedTokens.sol" or "SupportedTokens.sol" so that
         //       we can share this information across the two contracts as well as shortening
         //       the current implementation of RewardDAO.
-        require(isContract(rewardDAO));
 
         var tokenBalance = queryBalance(_token);
         if (tokenBalance > 0) {
@@ -98,14 +96,14 @@ contract Balances is Backdoor, IBalances {
     }
 
     /**
-        @dev Returns the balance (in AO) of the Savings Contract associated with user
+        @dev Returns the balance (in BNK) of the Savings Contract associated with user
 
         @param _account User for which Balance amount to be read.
     */
     function queryBalance(address _account)
         public constant returns (uint)
     {
-        return saveToken.balanceOf(_account);
+        return bnkToken.balanceOf(_account);
     }
 
     /** ----------------------------------------------------------------------------
@@ -132,15 +130,15 @@ contract Balances is Backdoor, IBalances {
     }
 
     /**
-        @dev sets a new official address of the AO
+        @dev sets a new official address of the BNK
 
-        @param  _newSaveToken New address associated with the RewardDAO.
+        @param  _newbnkToken New address associated with the RewardDAO.
     */
-    function setSaveToken(address _newSaveToken) {
-        require(saveToken != _newSaveToken);
-        assert(_newSaveToken != 0x0);
+    function setbnkToken(address _newbnkToken) {
+        require(bnkToken != _newbnkToken);
+        assert(_newbnkToken != 0x0);
 
-        delete saveToken;
-        saveToken = AO(_newSaveToken);
+        delete bnkToken;
+        bnkToken = BNK(_newbnkToken);
     }
 }

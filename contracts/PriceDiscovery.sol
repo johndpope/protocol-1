@@ -1,5 +1,5 @@
 pragma solidity ^0.4.15;
-import './AO.sol';
+import './BNK.sol';
 import './bancor_contracts/interfaces/IERC20Token.sol';
 
 import './interfaces/IPriceDiscovery.sol';

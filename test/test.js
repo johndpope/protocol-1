@@ -17,15 +17,15 @@ web3.personal.unlockAccount(web3.eth.coinbase)
  *                                   Test Setup                                 * 
  * ---------------------------------------------------------------------------- */
 // variables pointing to deployed contracts
-var ao = null;
-var rewardDao = null;
+var BNK = null;
+var rewardDAO = null;
 var etherToken = null;
 var balances = null;
 
 const ether = 1000000000000000000;
 
-AO.deployed().then(function(i) { ao = i; })
-RewardDAO.deployed().then(function(i) { rewardDao = i; })
+BNK.deployed().then(function(i) { BNK = i; })
+RewardDAO.deployed().then(function(i) { rewardDAO = i; })
 EtherToken.deployed().then(function(i) { etherToken = i; })
 Balances.deployed().then(function(i) { balances = i; })
 
@@ -33,17 +33,17 @@ etherToken.deposit( { value: 50 * ether } );
 web3.fromWei(web3.eth.getBalance(etherToken.address)); // check successful transfer
 
 // sets up event listeners
-var vaultCreated = rewardDao.VaultCreated();
+var vaultCreated = rewardDAO.VaultCreated();
 vaultCreated.watch(function(error, result) { if (error == null) { console.log(result.args); } });
 
-var deposit = rewardDao.Deposit();
+var deposit = rewardDAO.Deposit();
 deposit.watch(function(error, result) { if (error == null) { console.log(result.args); } });
 
 /* ---------------------------------------------------------------------------- *
  *                              Deploys Vault                                   * 
  * ---------------------------------------------------------------------------- */
-rewardDao.deployVault(); // deploys the vault for our user
-rewardDao.deployVault(); // should do nothing -> cannot deploy 2 vaults
+rewardDAO.deployVault(); // deploys the vault for our user
+rewardDAO.deployVault(); // should do nothing -> cannot deploy 2 vaults
 
 /* ---------------------------------------------------------------------------- *
  *                         Testing for ERC Balances                             * 
@@ -63,8 +63,8 @@ web3.fromWei(web3.eth.getBalance(web3.eth.coinbase)); // confirm (should be 80 E
  *                             SafeContract Testing                             * 
  * ---------------------------------------------------------------------------- */
 // deposit the ether coins from RewardDAO: mints ERC20 wrappers and track in vault
-etherToken.approve(rewardDao.address, 10 * ether);
-rewardDao.deposit(etherToken.address, 10 * ether);
+etherToken.approve(rewardDAO.address, 10 * ether);
+rewardDAO.deposit(etherToken.address, 10 * ether);
 
-rewardDao.withdraw(); 
+rewardDAO.withdraw(); 
 

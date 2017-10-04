@@ -3,7 +3,7 @@ import './interfaces/IRewardDAO.sol';
 
 import './interfaces/IKnownTokens.sol';
 
-import './AO.sol';
+import './BNK.sol';
 import './Balances.sol';
 import './SafeMath.sol';
 import './KnownTokens.sol';
@@ -21,15 +21,15 @@ contract RewardDAO is IRewardDAO {
 
     struct Vault {
         address balances;
-        uint unclaimedAO;
-        uint totalAO;
+        uint unclaimeDAO;
+        uint totalBNK;
         uint withdrawalFee;
     }
 
     uint constant FEE_MULTIPLIER = 100;
     uint constant MAX_USERS = 1000;
 
-    AO saveToken;                // TODO: Remove this, since all the transfers will be within the Balances
+    BNK bnkToken;                // TODO: Remove this, since all the transfers will be within the Balances
     ITokenChanger tokenChanger;  // TODO make this of type IBancorChanger to facilitate future upgrades
     IKnownTokens knownTokens;
 
@@ -44,15 +44,15 @@ contract RewardDAO is IRewardDAO {
         @dev constructor
 
         @param _tokenChanger    Address of a deployed TokenChanger contract (i.e. BancorChanger)
-        @param _saveToken       Address of the account from where saveTokens are being issued.
+        @param _bnkToken       Address of the account from where bnkTokens are being issued.
         @param _knownTokens     Address of a deployed IKnownTokens contract (i.e. KnownTokens).
     */
-    function RewardDAO(ITokenChanger _tokenChanger, IKnownTokens _knownTokens, AO _saveToken, EtherToken _etherToken) {
+    function RewardDAO(ITokenChanger _tokenChanger, IKnownTokens _knownTokens, BNK _bnkToken, EtherToken _etherToken) {
         tokenChanger = _tokenChanger;
-        saveToken    = _saveToken;
+        bnkToken    = _bnkToken;
         knownTokens  = _knownTokens;
 
-        knownTokens.addToken(address(_saveToken));
+        knownTokens.addToken(address(_bnkToken));
         knownTokens.addToken(address(_etherToken));
     }
 
@@ -67,16 +67,16 @@ contract RewardDAO is IRewardDAO {
         users.push(msg.sender);
 
         // Creates the SavingsContract.
-        Balances b = new Balances(address(this), address(saveToken), msg.sender);
+        Balances b = new Balances(address(this), address(bnkToken), msg.sender);
         addressToSCMap[msg.sender].balances = address(b);
-        addressToSCMap[msg.sender].unclaimedAO = 0;
+        addressToSCMap[msg.sender].unclaimeDAO = 0;
         addressToSCMap[msg.sender].withdrawalFee = 0;
 
         SavingsContractCreated(msg.sender);
     }
 
     /**
-        @dev claim your AO held by the RewardDAO by transferring funds in the the save to balance
+        @dev claim your BNK held by the RewardDAO by transferring funds in the the save to balance
     */
     function claim()
         public
@@ -84,15 +84,15 @@ contract RewardDAO is IRewardDAO {
         require(search(msg.sender, users));
 
         var sc = addressToSCMap[msg.sender];
-        assert(sc.unclaimedAO > 0);
+        assert(sc.unclaimeDAO > 0);
 
-        var claimAmount = sc.unclaimedAO;
-        delete sc.unclaimedAO;
+        var claimAmount = sc.unclaimeDAO;
+        delete sc.unclaimeDAO;
 
-        var oldTotalAO = sc.totalAO;
-        sc.totalAO = oldTotalAO.add(claimAmount);
+        var oldTotalBNK = sc.totalBNK;
+        sc.totalBNK = oldTotalBNK.add(claimAmount);
 
-        saveToken.transfer(sc.balances, claimAmount);
+        bnkToken.transfer(sc.balances, claimAmount);
 
         TokensClaimed();
     }
@@ -147,9 +147,9 @@ contract RewardDAO is IRewardDAO {
         var bal = Balances(sc.balances);
 
         // require the withdrawer to pay some amount of money before transferring money to account
-        assert(sc.unclaimedAO == 0);
+        assert(sc.unclaimeDAO == 0);
         assert(sc.withdrawalFee != 0);
-        saveToken.transferFrom(msg.sender, address(this), sc.withdrawalFee);
+        bnkToken.transferFrom(msg.sender, address(this), sc.withdrawalFee);
 
         // transfer all the tokens associated with the balance to the user account
 
@@ -161,7 +161,7 @@ contract RewardDAO is IRewardDAO {
 
         // resets all the defaults in case anything goes wrong in deletion
         addressToSCMap[msg.sender].balances      = 0x0;
-        addressToSCMap[msg.sender].unclaimedAO   = 0;
+        addressToSCMap[msg.sender].unclaimeDAO   = 0;
         addressToSCMap[msg.sender].withdrawalFee = 0;
         delete addressToSCMap[msg.sender];
     }
@@ -173,7 +173,7 @@ contract RewardDAO is IRewardDAO {
     /**
         @dev arbitrates the deposits into Balances
 
-        @param  _amount      Amount (in saveTokens) being deposited into the vault
+        @param  _amount      Amount (in bnkTokens) being deposited into the vault
         @return boolean success of the deposit
     */
     function onDeposit(uint _amount) returns (bool) {
@@ -204,13 +204,13 @@ contract RewardDAO is IRewardDAO {
             {
                 runningTotal.add(etherToken.balanceOf(_vault.balances));
             } else if ((knownTokens[i] == _token) &&
-                       (token == saveToken))
+                       (token == bnkToken))
             {
                 // TODO query bancorchanger
-                var etherRepresentationOfsaveTokenHeld =
-                        bancorChanger.getReturn(saveToken, etherToken, _newBalance);
+                var etherRepresentationOfbnkTokenHeld =
+                        bancorChanger.getReturn(bnkToken, etherToken, _newBalance);
                 runningTotal.add(
-                    etherRepresentationOfsaveTokenHeld
+                    etherRepresentationOfbnkTokenHeld
                 );
             } else {
                 revert();
@@ -234,7 +234,7 @@ contract RewardDAO is IRewardDAO {
     // {
     //     require(search(msg.sender, users));
     //     var v = addressToVaultMap[msg.sender];
-    //     return bancorChanger.getReturn(saveToken, etherToken, vault.unclaimedAO);
+    //     return bancorChanger.getReturn(bnkToken, etherToken, vault.unclaimeDAO);
     // }
 
     /**
