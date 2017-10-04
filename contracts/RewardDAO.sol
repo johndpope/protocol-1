@@ -26,10 +26,11 @@ contract RewardDAO is IRewardDAO {
         uint withdrawalFee;
     }
 
-    uint constant FEE_MULTIPLIER = 100;
+    uint constant FEE_MULTIPLIER = 1500;
     uint constant MAX_USERS = 200;
 
     BNK bnkToken;                // TODO: Remove this, since all the transfers will be within the Balances
+    EtherToken wrappedEther;
     ITokenChanger tokenChanger;  // TODO make this of type IBancorChanger to facilitate future upgrades
     KnownTokens knownTokens;
 
@@ -122,9 +123,14 @@ contract RewardDAO is IRewardDAO {
 
         Vault vault = savingsContract[msg.sender];
 
-        vault.withdrawalFee = calcFee(vault);
-        /// Implement approveAndCall here
-        vault.balances.pullDeposit(msg.sender, _token, _amount);
+        uint valueOfHoldings = vault.balances.valueOf();
+        uint tokenValueInEther = knownTokens.priceOf(_token).mul(_amount);
+        uint newValue = valueOfHoldings.add(tokenValueInEther);
+
+        vault.withdrawalFee = calcFee(vault, newValue);
+        /// TODO: Check that the value.balances is approved for the token amount from user first
+        assert(vault.balances.call(bytes4(keccak256("pullDeposit(address,address,uint256")), msg.sender, _token, _amount));
+        Log("Deposit successful!");
     }
 
     /**
@@ -213,17 +219,17 @@ contract RewardDAO is IRewardDAO {
         return runningTotal;
     } */
 
-    function calcFee(Vault _vault, uint _newBalance, address _token)
+    function calcFee(Vault _vault, uint _newValue)
         private constant returns (uint)
     {
         uint oldFee = _vault.withdrawalFee;
-        uint newFee = fee(_vault, _newBalance, _token);
+        uint newFee = _newValue.mul(FEE_MULTIPLIER); 
 
         // The withdrawal fee can never be lower, thereby resisting gaming the system
         if (newFee < oldFee) { 
-            vault.withdrawalFee = oldFee;
+            return oldFee;
         } else {
-            vault.withdrawalFee = newFee;
+            return newFee;
         }
     }
 

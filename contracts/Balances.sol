@@ -64,13 +64,14 @@ contract Balances is IBalances {
         external
         onlyRewardDAO
         onlyNotWithdrawn
+        returns (bool)
     {
         require(knownTokens.containsToken(_token));
         
         IERC20Token token = IERC20Token(_token);
         token.transferFrom(_user, address(this), _amount);
 
-        Deposit(_amount, _token);
+        return true;
     }
 
     /**
