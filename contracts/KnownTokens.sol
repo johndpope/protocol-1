@@ -1,4 +1,5 @@
 pragma solidity ^0.4.15;
+
 import './BNK.sol';
 import './bancor_contracts/EtherToken.sol';
 import './PriceDiscovery.sol';
@@ -20,6 +21,7 @@ contract KnownTokens is IKnownTokens {
     mapping(address => mapping(address => IPriceDiscovery)) priceDiscoveryMap;
 
     address[20] public allKnownTokens;
+    uint8 constant public MAX_TOKENS = 20;
 
     /**
         @dev constructor
@@ -54,21 +56,15 @@ contract KnownTokens is IKnownTokens {
         @param  _newTokenAddr      Address of the new token being added
     */
     function addToken(address _newTokenAddr)
-        public
+        public returns (bool success)
     {
-        // TODO: NEEDS TO BE CHANGED DRASTICALLY
-        IERC20Token newToken = IERC20Token(_newTokenAddr);
-        for (uint i = 0; i < allKnownTokens.length; ++i) {
-            IERC20Token knownToken = IERC20Token(allKnownTokens[i]);
-
-            var fromNewToken = new PriceDiscovery(newToken, knownToken, tokenChanger);
-            priceDiscoveryMap[_newTokenAddr][allKnownTokens[i]] = fromNewToken;
-
-            var toNewToken = new PriceDiscovery(knownToken, newToken, tokenChanger);
-            priceDiscoveryMap[allKnownTokens[i]][_newTokenAddr] = toNewToken;
+        for (uint8 i = 0; i < MAX_TOKENS; ++i) {
+            if (allKnownTokens[i] == 0x0) {
+                allKnownTokens[i] = _newTokenAddr;
+                return true;
+            }
         }
-
-        allKnownTokens.push(_newTokenAddr);
+        return false;
     }
 
     function allTokens()
@@ -86,7 +82,7 @@ contract KnownTokens is IKnownTokens {
     function containsToken(address _token)
         public constant returns (bool)
     {
-        for (uint i = 0; i < allKnownTokens.length; ++i) {
+        for (uint i = 0; i < MAX_TOKENS; ++i) {
             if (_token == allKnownTokens[i]) {return true;}
         }
         return false;
