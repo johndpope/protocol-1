@@ -1,21 +1,24 @@
 pragma solidity ^0.4.15;
+
 import './BNK.sol';
-import './KnownTokens.sol';
 import './SafeMath.sol';
 
 import './bancor_contracts/interfaces/IERC20Token.sol';
 import './interfaces/IBalances.sol';
+import './interfaces/IKnownTokens.sol';
 
 /**
- * Balances of user funds, alternatively known as the Savings Contract
+ * @title Balances of user funds, alternatively known as the Savings Contract
  */
 contract Balances is IBalances {
     using SafeMath for uint;
 
     BNK bnkToken;                        // Address of the BNK Token
     IRewardDAO rewardDAO;                // Address of the Reward DAO
-    KnownTokens knownTokens;
+    IKnownTokens knownTokens;
+
     address user;                        // Address of the user who owns funds in this contract
+    bool withdrawn = false;
 
     /// Deposit Event for when a user sends funds
     event Deposit(uint indexed amount, address token);
@@ -31,16 +34,22 @@ contract Balances is IBalances {
     */
     function Balances(address _rewardDAO,
                       address _bnkToken,
-                      address _user) {
+                      address _user,
+                      address _knownTokens) {
         rewardDAO = IRewardDAO(_rewardDAO);
-        bnkToken = BNK(_bnkToken);                    
+        bnkToken = BNK(_bnkToken); 
+        knownTokens = IKnownTokens(_knownTokens);                   
         user = _user;
-        knownTokens = _knownTokens;
     }
 
     modifier onlyRewardDAO() {
         require(msg.sender == address(rewardDAO));
         require(isContract(rewardDAO));
+        _;
+    }
+
+    modifier onlyNotWithdrawn() {
+        require(!withdrawn);
         _;
     }
 
@@ -53,6 +62,7 @@ contract Balances is IBalances {
     */
     function deposit(address _user, address _token, uint _amount)
         onlyRewardDAO
+        onlyNotWithdrawn
     {
         IERC20Token token = IERC20Token(_token);
         token.transferFrom(_user, address(this), _amount);
@@ -71,21 +81,9 @@ contract Balances is IBalances {
     */
     function withdraw(address _user)
         onlyRewardDAO
+        onlyNotWithdrawn
     {
-        // TODO: Similar concerns as above. I believe this would be the right
-        //       way to go about it but it needs more thought behind it. We could 
-        //       do the verification checks in the RewardDAO function that calls this
-        //       one. And then in here do something like:
-        assert(_user == user);
-        // TODO: Right now it would be most straight forward to do a complete
-        //       withdrawal, but we should keep thinking about ways to eventually
-        //       implement incrementally withdrawals. Anyway, I digress the main point
-        //       is that we might need to store the tokens in RewardDAO and the balances,
-        //       and then verify that the address array store of both RewardDAO and Balances
-        //       is the same... Maybe we should extract out another contract for this,
-        //       something like "VerifiedTokens.sol" or "SupportedTokens.sol" so that
-        //       we can share this information across the two contracts as well as shortening
-        //       the current implementation of RewardDAO.
+        require(_user == user);
 
         address[] memory tokens;
         tokens = knownTokens.allTokens();
@@ -96,6 +94,7 @@ contract Balances is IBalances {
             }
         }
 
+        withdrawn = true;
     }
 
     ///TODO add a function to switch out the known tokens contract.
@@ -135,15 +134,16 @@ contract Balances is IBalances {
     }
 
     /**
-        @dev sets a new official address of the BNK
-
-        @param  _newbnkToken New address associated with the RewardDAO.
+        @dev Sets the new KnownTokens address
     */
-    function setbnkToken(address _newbnkToken) {
-        require(bnkToken != _newbnkToken);
-        assert(_newbnkToken != 0x0);
+    function setKnownTokens(address _newKnownTokens) 
+        onlyRewardDAO
+    {
+        require(knownTokens != _newKnownTokens);
+        require(_newKnownTokens != 0x0);
+        require(isContract(_newKnownTokens));
 
-        delete bnkToken;
-        bnkToken = BNK(_newbnkToken);
+        delete knownTokens;
+        knownTokens = BNK(_newbnkToken);
     }
 }
