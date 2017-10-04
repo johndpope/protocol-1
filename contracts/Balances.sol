@@ -60,14 +60,16 @@ contract Balances is IBalances {
          @param _token    Address of the ERC20 token being deposited, 0x0 for ether
          @param _amount   Amount of said token being deposited into savings contract
     */
-    function deposit(address _user, address _token, uint _amount)
+    function pullDeposit(address _user, address _token, uint _amount)
+        external
         onlyRewardDAO
         onlyNotWithdrawn
     {
+        require(knownTokens.containsToken(_token));
+        
         IERC20Token token = IERC20Token(_token);
         token.transferFrom(_user, address(this), _amount);
 
-        require(rewardDAO.onDeposit(_amount)); // TODO: Implement this? 
         Deposit(_amount, _token);
     }
 
@@ -88,12 +90,13 @@ contract Balances is IBalances {
         address[] memory tokens;
         tokens = knownTokens.allTokens();
         for (uint i = 0; i < tokens.length; ++i) {
-            IERC20Token token = IERC20Token(tokens[i]);
-            if (token.balanceOf(this) > 0) {
-                token.transfer(user, token.balanceOf(this));
+            if (tokens[i] != 0x0) {
+                IERC20Token token = IERC20Token(tokens[i]);
+                if (token.balanceOf(this) > 0) {
+                    token.transfer(user, token.balanceOf(this));
+                }
             }
         }
-
         withdrawn = true;
     }
 

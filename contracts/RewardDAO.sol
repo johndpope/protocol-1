@@ -27,18 +27,18 @@ contract RewardDAO is IRewardDAO {
     }
 
     uint constant FEE_MULTIPLIER = 100;
-    uint constant MAX_USERS = 1000;
+    uint constant MAX_USERS = 200;
 
     BNK bnkToken;                // TODO: Remove this, since all the transfers will be within the Balances
     ITokenChanger tokenChanger;  // TODO make this of type IBancorChanger to facilitate future upgrades
-    address[] knownTokens;
+    KnownTokens knownTokens;
 
-    mapping(address => Vault) addressToSCMap;
+    mapping(address => Vault) savingsContract;
     address[] users;
 
     event SavingsContractCreated(address indexed savingsContractAddress);
     event TokensClaimed();
-    event Log(uint amount);
+    event Log(string);
 
     /**
         @dev constructor
@@ -48,12 +48,14 @@ contract RewardDAO is IRewardDAO {
     */
     function RewardDAO(address _tokenChanger,
                        address _bnkToken, 
-                       address _etherToken) {
-        tokenChanger = ITokenChanger(_tokenChanger);
-        bnkToken = BNK(_bnkToken);
+                       address _etherToken,
+                       address _knownTokens) {
+ 
+        knownTokens = KnownTokens(_knownTokens);
 
-        knownTokens.push(_etherToken);
-        knownTokens.push(_bnkToken);
+        knownTokens.addToken(_etherToken);
+        knownTokens.addToken(_bnkToken);
+        knownTokens.addTokenChanger(_tokenChanger);
     }
 
     /**
@@ -62,15 +64,16 @@ contract RewardDAO is IRewardDAO {
     function deploySavingsContract()
         public
     {
-        assert(users.length < MAX_USERS);
-        assert(!search(msg.sender, users));
+        require(users.length < MAX_USERS);
+        require(!search(msg.sender, users));
         users.push(msg.sender);
 
         // Creates the SavingsContract.
         Balances bal = new Balances(address(this), address(bnkToken), msg.sender);
-        addressToSCMap[msg.sender].balances = address(bal);
-        addressToSCMap[msg.sender].unclaimeDAO = 0;
-        addressToSCMap[msg.sender].withdrawalFee = 0;
+        savingsContract[msg.sender].balances = address(bal);
+        savingsContract[msg.sender].unclaimedBNK = 0;
+        savingsContract[msg.sender].totalBNK = 0;
+        savingsContract[msg.sender].withdrawalFee = 0;
 
         SavingsContractCreated(msg.sender);
     }
@@ -83,18 +86,21 @@ contract RewardDAO is IRewardDAO {
     {
         require(search(msg.sender, users));
 
-        var sc = addressToSCMap[msg.sender];
-        assert(sc.unclaimeDAO > 0);
+        Vault vault = savingsContract[msg.sender];
+        if (!vault.unclaimeDAO > 0) {
+            Log("You don't have any BNK to claim.");
+            return;
+        }
 
-        var claimAmount = sc.unclaimeDAO;
-        delete sc.unclaimeDAO;
+        uint claimAmount = vault.unclaimedBNK;
+        delete vault.unclaimedBnk;
 
-        var oldTotalBNK = sc.totalBNK;
-        sc.totalBNK = oldTotalBNK.add(claimAmount);
+        uint oldTotalBNK = vault.totalBNK;
+        vault.totalBNK = oldTotalBNK.add(claimAmount);
 
-        bnkToken.transfer(sc.balances, claimAmount);
+        bnkToken.transfer(vault.balances, claimAmount);
 
-        TokensClaimed();
+        Log("BNK Tokens claimed.");
     }
 
     /**
@@ -107,31 +113,18 @@ contract RewardDAO is IRewardDAO {
     function deposit(address _token, uint _amount)
         public
     {
-        // Ensure that the RewardDAO is aware of the token
-        // being sent as a deposit.
+        require(_amount > 0);
         require(knownTokens.containsToken(_token));
-
-        // Require that the user is registered with the RewardDAO.
         require(search(msg.sender, users));
-        var sc = addressToSCMap[msg.sender];
 
         IERC20Token token = IERC20Token(_token);
-        require(_amount > 0);
-        assert(token.balanceOf(msg.sender) > _amount);
+        require(token.balanceOf(msg.sender) > _amount);
 
-        Balances bal = Balances(sc.balances);
-        var oldBalance = bal.queryBalance(msg.sender);
-        var newBalance = oldBalance.add(_amount);
+        Vault vault = savingsContract[msg.sender];
 
-        var oldFee = sc.withdrawalFee;
-        var newFee = calcFee(sc, newBalance, _token);
-
-        // TODO: Double check this
-        // set the sc fee to be maximum of the previous and updated fee
-        if (newFee < oldFee) { sc.withdrawalFee = oldFee; }
-        else                 { sc.withdrawalFee = newFee; }
-
-        bal.deposit(msg.sender, _token, _amount);
+        vault.withdrawalFee = calcFee(vault);
+        /// Implement approveAndCall here
+        vault.balances.pullDeposit(msg.sender, _token, _amount);
     }
 
     /**
@@ -143,7 +136,7 @@ contract RewardDAO is IRewardDAO {
     {
         require(search(msg.sender, users));
 
-        var sc = addressToSCMap[msg.sender];
+        var sc = savingsContract[msg.sender];
         var bal = Balances(sc.balances);
 
         // require the withdrawer to pay some amount of money before transferring money to account
@@ -160,10 +153,10 @@ contract RewardDAO is IRewardDAO {
         } */
 
         // resets all the defaults in case anything goes wrong in deletion
-        addressToSCMap[msg.sender].balances      = 0x0;
-        addressToSCMap[msg.sender].unclaimeDAO   = 0;
-        addressToSCMap[msg.sender].withdrawalFee = 0;
-        delete addressToSCMap[msg.sender];
+        savingsContract[msg.sender].balances      = 0x0;
+        savingsContract[msg.sender].unclaimeDAO   = 0;
+        savingsContract[msg.sender].withdrawalFee = 0;
+        delete savingsContract[msg.sender];
     }
 
     /** ----------------------------------------------------------------------------
@@ -221,7 +214,18 @@ contract RewardDAO is IRewardDAO {
     } */
 
     function calcFee(Vault _vault, uint _newBalance, address _token)
-        private constant returns (uint) { return 1; }
+        private constant returns (uint)
+    {
+        uint oldFee = _vault.withdrawalFee;
+        uint newFee = fee(_vault, _newBalance, _token);
+
+        // The withdrawal fee can never be lower, thereby resisting gaming the system
+        if (newFee < oldFee) { 
+            vault.withdrawalFee = oldFee;
+        } else {
+            vault.withdrawalFee = newFee;
+        }
+    }
 
     /**
         @dev Returns the amount of money in the save associated with the message sender in ETH
