@@ -85,6 +85,7 @@ contract Balances is IBalances {
     function withdraw(address _user)
         onlyRewardDAO
         onlyNotWithdrawn
+        returns (bool)
     {
         require(_user == user);
 
@@ -99,6 +100,7 @@ contract Balances is IBalances {
             }
         }
         withdrawn = true;
+        return true;
     }
 
     ///TODO add a function to switch out the known tokens contract.

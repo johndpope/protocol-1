@@ -38,7 +38,6 @@ contract RewardDAO is IRewardDAO {
     address[] users;
 
     event SavingsContractCreated(address indexed savingsContractAddress);
-    event TokensClaimed();
     event Log(string);
 
     /**
@@ -69,7 +68,7 @@ contract RewardDAO is IRewardDAO {
         require(!search(msg.sender, users));
         users.push(msg.sender);
 
-        // Creates the SavingsContract.
+        // Creates the SavingsContract
         Balances bal = new Balances(address(this), address(bnkToken), msg.sender);
         savingsContract[msg.sender].balances = address(bal);
         savingsContract[msg.sender].unclaimedBNK = 0;
@@ -139,30 +138,27 @@ contract RewardDAO is IRewardDAO {
     */
     function withdraw()
         public
+        returns (bool)
     {
         require(search(msg.sender, users));
+        require(vault.withdrawalFee > 0);
 
-        var sc = savingsContract[msg.sender];
-        var bal = Balances(sc.balances);
+        Vault vault = savingsContract[msg.sender];
 
-        // require the withdrawer to pay some amount of money before transferring money to account
-        assert(sc.unclaimeDAO == 0);
-        assert(sc.withdrawalFee != 0);
-        bnkToken.transferFrom(msg.sender, address(this), sc.withdrawalFee);
+        if (vault.unclaimedBNK != 0) {
+            Log("Claim all of your BNK first!");
+            return false;
+        }
 
-        // transfer all the tokens associated with the balance to the user account
+        /// Make sure approve function is called first.
+        bnkToken.transferFrom(msg.sender, address(this), vault.withdrawalFee);
 
-        // TODO: Put the below back in
-        /* address[] knownTokensList = knownTokens.getKnownTokensList();
-        for (uint i = 0; i < knownTokensList.length; ++i) {
-            bal.withdraw(msg.sender, knownTokensList[i]);
-        } */
+        // Transfers all the tokens
+        assert(vault.balances.call(bytes4(keccak256("withdraw(address)")), msg.sender));
 
-        // resets all the defaults in case anything goes wrong in deletion
-        savingsContract[msg.sender].balances      = 0x0;
-        savingsContract[msg.sender].unclaimeDAO   = 0;
-        savingsContract[msg.sender].withdrawalFee = 0;
         delete savingsContract[msg.sender];
+        Log("Withdraw successful!");
+        return true;
     }
 
 /////
