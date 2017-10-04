@@ -22,7 +22,7 @@ contract RewardDAO is IRewardDAO {
     struct Vault {
         address balances;
         uint unclaimedBNK;
-        uint totalBNK;
+        uint valueOf;
         uint withdrawalFee;
     }
 
@@ -33,6 +33,8 @@ contract RewardDAO is IRewardDAO {
     EtherToken wrappedEther;
     ITokenChanger tokenChanger;  // TODO make this of type IBancorChanger to facilitate future upgrades
     KnownTokens knownTokens;
+
+    uint public totalNetworkValue;
 
     mapping(address => Vault) savingsContract;
     address[] users;
@@ -122,9 +124,10 @@ contract RewardDAO is IRewardDAO {
 
         Vault vault = savingsContract[msg.sender];
 
-        uint valueOfHoldings = vault.balances.valueOf();
+        uint valueOfHoldings = vault.valueOf;
         uint tokenValueInEther = knownTokens.priceOf(_token).mul(_amount);
         uint newValue = valueOfHoldings.add(tokenValueInEther);
+        vault.valueOf = newValue;
 
         vault.withdrawalFee = calcFee(vault, newValue);
         /// TODO: Check that the value.balances is approved for the token amount from user first
@@ -160,6 +163,11 @@ contract RewardDAO is IRewardDAO {
         Log("Withdraw successful!");
         return true;
     }
+
+    function distributeBnkRewards() {
+
+    }
+
 
 /////
 // Private Helper Functions
