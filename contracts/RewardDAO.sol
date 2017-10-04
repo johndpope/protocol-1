@@ -165,59 +165,9 @@ contract RewardDAO is IRewardDAO {
         delete savingsContract[msg.sender];
     }
 
-    /** ----------------------------------------------------------------------------
-        *                       Private helper functions                             *
-        ---------------------------------------------------------------------------- */
-
-    /**
-        @dev arbitrates the deposits into Balances
-
-        @param  _amount      Amount (in bnkTokens) being deposited into the vault
-        @return boolean success of the deposit
-    */
-    function onDeposit(uint _amount) returns (bool) {
-        assert(true); // TODO
-        Log(_amount);
-        return true;
-    }
-
-    /**
-        @dev Calculates the new withdrawal fee everytime a user submits a deposit of token.
-             Private function in which all the variable have already been checked for accuracy in the calling
-             public-facing function.
-
-        @param _vault The address for the vault to be determined.
-        @param _newBalance The new balance of token to calculate with.
-        @param _token The address of the token which was deposited
-        @return The new withdrawal fee to be paid.
-
-    function calcFee(Vault _vault, uint _newBalance, address _token)
-        private constant returns (uint)
-    {
-        uint runningTotal;
-        var token = IERC20Token(_token);
-
-        for (uint i = 0; i < knownTokens.length; ++i) {
-            if ((knownTokens[i] == _token) &&
-                (token == etherToken))
-            {
-                runningTotal.add(etherToken.balanceOf(_vault.balances));
-            } else if ((knownTokens[i] == _token) &&
-                       (token == bnkToken))
-            {
-                // TODO query bancorchanger
-                var etherRepresentationOfbnkTokenHeld =
-                        bancorChanger.getReturn(bnkToken, etherToken, _newBalance);
-                runningTotal.add(
-                    etherRepresentationOfbnkTokenHeld
-                );
-            } else {
-                revert();
-            }
-        }
-
-        return runningTotal;
-    } */
+/////
+// Private Helper Functions
+/////
 
     function calcFee(Vault _vault, uint _newValue)
         private constant returns (uint)
