@@ -1,5 +1,6 @@
 pragma solidity ^0.4.17;
 
+import './KnownTokens.sol';
 import './TBK.sol';
 import './SafeMath.sol';
 
@@ -8,20 +9,22 @@ import './interfaces/IBalances.sol';
 import './interfaces/IKnownTokens.sol';
 
 /**
- * @title Balances of user funds, alternatively known as the Savings Contract
+ * @title Balances.sol
+ * Holds all user funds in an isolated and secure contract and allows interoperability with the RewardDAO.
  */
 contract Balances is IBalances {
     using SafeMath for uint;
 
     TBK TBKToken;                        // Address of the TBK Token
     IRewardDAO rewardDAO;                // Address of the Reward DAO
-    IKnownTokens knownTokens;
+    KnownTokens knownTokens;
 
     address user;                        // Address of the user who owns funds in this contract
     bool withdrawn = false;
 
     /// Deposit Event for when a user sends funds
     event Deposit(uint indexed amount, address token);
+
     /// Withdrawal Event for when a user pays withdrawal fee and pulls funds
     event Withdraw();
 
@@ -38,7 +41,7 @@ contract Balances is IBalances {
                       address _knownTokens) {
         rewardDAO = IRewardDAO(_rewardDAO);
         TBKToken = TBK(_TBKToken); 
-        knownTokens = IKnownTokens(_knownTokens);                   
+        knownTokens = KnownTokens(_knownTokens);                   
         user = _user;
     }
 
@@ -89,7 +92,7 @@ contract Balances is IBalances {
     {
         require(_user == user);
 
-        address[] memory tokens;
+        address[20] memory tokens;
         tokens = knownTokens.allTokens();
         for (uint i = 0; i < tokens.length; ++i) {
             if (tokens[i] != 0x0) {
@@ -150,6 +153,11 @@ contract Balances is IBalances {
         require(isContract(_newKnownTokens));
 
         delete knownTokens;
-        knownTokens = TBK(_newTBKToken);
+        knownTokens = KnownTokens(_newKnownTokens);
+    }
+
+    function totalTBK() 
+        constant returns (uint)
+    {
     }
 }

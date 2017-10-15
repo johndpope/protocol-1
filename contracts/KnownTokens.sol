@@ -1,4 +1,4 @@
-pragma solidity ^0.4.15;
+pragma solidity ^0.4.17;
 
 import './TBK.sol';
 import './bancor_contracts/EtherToken.sol';
@@ -86,5 +86,8 @@ contract KnownTokens is IKnownTokens {
             if (_token == allKnownTokens[i]) {return true;}
         }
         return false;
+    }
+
+    function addTokenChanger(address _tokenChanger) {
     }
 }

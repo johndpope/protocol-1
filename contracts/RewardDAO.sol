@@ -71,10 +71,9 @@ contract RewardDAO is IRewardDAO {
         users.push(msg.sender);
 
         // Creates the SavingsContract
-        Balances bal = new Balances(address(this), address(TBKToken), msg.sender);
+        Balances bal = new Balances(address(this), address(TBKToken), msg.sender, address(knownTokens));
         savingsContract[msg.sender].balances = address(bal);
         savingsContract[msg.sender].unclaimedTBK = 0;
-        savingsContract[msg.sender].totalTBK = 0;
         savingsContract[msg.sender].withdrawalFee = 0;
 
         SavingsContractCreated(msg.sender);
@@ -88,8 +87,8 @@ contract RewardDAO is IRewardDAO {
     {
         require(search(msg.sender, users));
 
-        Vault vault = savingsContract[msg.sender];
-        if (!vault.unclaimeDAO > 0) {
+        Vault storage vault = savingsContract[msg.sender];
+        if (vault.unclaimedTBK == 0) {
             Log("You don't have any TBK to claim.");
             return;
         }
@@ -97,8 +96,8 @@ contract RewardDAO is IRewardDAO {
         uint claimAmount = vault.unclaimedTBK;
         delete vault.unclaimedTBK;
 
-        uint oldTotalTBK = vault.totalTBK;
-        vault.totalTBK = oldTotalTBK.add(claimAmount);
+        // uint oldTotalTBK = vault.totalTBK;
+        // vault.totalTBK = oldTotalTBK.add(claimAmount);
 
         TBKToken.transfer(vault.balances, claimAmount);
 
@@ -122,10 +121,10 @@ contract RewardDAO is IRewardDAO {
         IERC20Token token = IERC20Token(_token);
         require(token.balanceOf(msg.sender) > _amount);
 
-        Vault vault = savingsContract[msg.sender];
+        Vault storage vault = savingsContract[msg.sender];
 
         uint valueOfHoldings = vault.valueOf;
-        uint tokenValueInEther = knownTokens.priceOf(_token).mul(_amount);
+        uint tokenValueInEther = knownTokens.recoverPrice(_token, address(wrappedEther)).mul(_amount);
         uint newValue = valueOfHoldings.add(tokenValueInEther);
         vault.valueOf = newValue;
 
@@ -146,7 +145,7 @@ contract RewardDAO is IRewardDAO {
         require(search(msg.sender, users));
         require(vault.withdrawalFee > 0);
 
-        Vault vault = savingsContract[msg.sender];
+        Vault memory vault = savingsContract[msg.sender];
 
         if (vault.unclaimedTBK != 0) {
             Log("Claim all of your TBK first!");
