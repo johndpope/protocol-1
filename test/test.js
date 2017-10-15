@@ -17,14 +17,14 @@ web3.personal.unlockAccount(web3.eth.coinbase)
  *                                   Test Setup                                 * 
  * ---------------------------------------------------------------------------- */
 // variables pointing to deployed contracts
-var BNK = null;
+var TBK = null;
 var rewardDAO = null;
 var etherToken = null;
 var balances = null;
 
 const ether = 1000000000000000000;
 
-BNK.deployed().then(function(i) { BNK = i; })
+TBK.deployed().then(function(i) { TBK = i; })
 RewardDAO.deployed().then(function(i) { rewardDAO = i; })
 EtherToken.deployed().then(function(i) { etherToken = i; })
 Balances.deployed().then(function(i) { balances = i; })

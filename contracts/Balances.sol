@@ -1,6 +1,6 @@
-pragma solidity ^0.4.15;
+pragma solidity ^0.4.17;
 
-import './BNK.sol';
+import './TBK.sol';
 import './SafeMath.sol';
 
 import './bancor_contracts/interfaces/IERC20Token.sol';
@@ -13,7 +13,7 @@ import './interfaces/IKnownTokens.sol';
 contract Balances is IBalances {
     using SafeMath for uint;
 
-    BNK bnkToken;                        // Address of the BNK Token
+    TBK TBKToken;                        // Address of the TBK Token
     IRewardDAO rewardDAO;                // Address of the Reward DAO
     IKnownTokens knownTokens;
 
@@ -29,15 +29,15 @@ contract Balances is IBalances {
         @dev constructor
 
         @param _rewardDAO Address of the Reward DAO
-        @param _bnkToken  Address of BNK Token
+        @param _TBKToken  Address of TBK Token
         @param _user      The user whose funds are stored in the contract
     */
     function Balances(address _rewardDAO,
-                      address _bnkToken,
+                      address _TBKToken,
                       address _user,
                       address _knownTokens) {
         rewardDAO = IRewardDAO(_rewardDAO);
-        bnkToken = BNK(_bnkToken); 
+        TBKToken = TBK(_TBKToken); 
         knownTokens = IKnownTokens(_knownTokens);                   
         user = _user;
     }
@@ -106,14 +106,14 @@ contract Balances is IBalances {
     ///TODO add a function to switch out the known tokens contract.
 
     /**
-        @dev Returns the balance (in BNK) of the Savings Contract associated with user
+        @dev Returns the balance (in TBK) of the Savings Contract associated with user
 
         @param _account User for which Balance amount to be read.
     */
     function queryBalance(address _account)
         public constant returns (uint)
     {
-        return bnkToken.balanceOf(_account);
+        return TBKToken.balanceOf(_account);
     }
 
     /** ----------------------------------------------------------------------------
@@ -150,6 +150,6 @@ contract Balances is IBalances {
         require(isContract(_newKnownTokens));
 
         delete knownTokens;
-        knownTokens = BNK(_newbnkToken);
+        knownTokens = TBK(_newTBKToken);
     }
 }

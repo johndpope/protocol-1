@@ -1,9 +1,9 @@
-pragma solidity ^0.4.15;
+pragma solidity ^0.4.17;
 
 import './interfaces/IRewardDAO.sol';
 import './interfaces/IKnownTokens.sol';
 
-import './BNK.sol';
+import './TBK.sol';
 import './Balances.sol';
 import './SafeMath.sol';
 import './KnownTokens.sol';
@@ -21,7 +21,7 @@ contract RewardDAO is IRewardDAO {
 
     struct Vault {
         address balances;
-        uint unclaimedBNK;
+        uint unclaimedTBK;
         uint valueOf;
         uint withdrawalFee;
     }
@@ -29,7 +29,7 @@ contract RewardDAO is IRewardDAO {
     uint constant FEE_MULTIPLIER = 1500;
     uint constant MAX_USERS = 200;
 
-    BNK bnkToken;                // TODO: Remove this, since all the transfers will be within the Balances
+    TBK TBKToken;                // TODO: Remove this, since all the transfers will be within the Balances
     EtherToken wrappedEther;
     ITokenChanger tokenChanger;  // TODO make this of type IBancorChanger to facilitate future upgrades
     KnownTokens knownTokens;
@@ -46,17 +46,17 @@ contract RewardDAO is IRewardDAO {
         @dev constructor
 
         @param _tokenChanger    Address of a deployed TokenChanger contract (i.e. BancorChanger)
-        @param _bnkToken       Address of the account from where bnkTokens are being issued.
+        @param _TBKToken       Address of the account from where TBKTokens are being issued.
     */
     function RewardDAO(address _tokenChanger,
-                       address _bnkToken, 
+                       address _TBKToken, 
                        address _etherToken,
                        address _knownTokens) {
  
         knownTokens = KnownTokens(_knownTokens);
 
         knownTokens.addToken(_etherToken);
-        knownTokens.addToken(_bnkToken);
+        knownTokens.addToken(_TBKToken);
         knownTokens.addTokenChanger(_tokenChanger);
     }
 
@@ -71,17 +71,17 @@ contract RewardDAO is IRewardDAO {
         users.push(msg.sender);
 
         // Creates the SavingsContract
-        Balances bal = new Balances(address(this), address(bnkToken), msg.sender);
+        Balances bal = new Balances(address(this), address(TBKToken), msg.sender);
         savingsContract[msg.sender].balances = address(bal);
-        savingsContract[msg.sender].unclaimedBNK = 0;
-        savingsContract[msg.sender].totalBNK = 0;
+        savingsContract[msg.sender].unclaimedTBK = 0;
+        savingsContract[msg.sender].totalTBK = 0;
         savingsContract[msg.sender].withdrawalFee = 0;
 
         SavingsContractCreated(msg.sender);
     }
 
     /**
-        @dev claim your BNK held by the RewardDAO by transferring funds in the the save to balance
+        @dev claim your TBK held by the RewardDAO by transferring funds in the the save to balance
     */
     function claim()
         public
@@ -90,19 +90,19 @@ contract RewardDAO is IRewardDAO {
 
         Vault vault = savingsContract[msg.sender];
         if (!vault.unclaimeDAO > 0) {
-            Log("You don't have any BNK to claim.");
+            Log("You don't have any TBK to claim.");
             return;
         }
 
-        uint claimAmount = vault.unclaimedBNK;
-        delete vault.unclaimedBnk;
+        uint claimAmount = vault.unclaimedTBK;
+        delete vault.unclaimedTBK;
 
-        uint oldTotalBNK = vault.totalBNK;
-        vault.totalBNK = oldTotalBNK.add(claimAmount);
+        uint oldTotalTBK = vault.totalTBK;
+        vault.totalTBK = oldTotalTBK.add(claimAmount);
 
-        bnkToken.transfer(vault.balances, claimAmount);
+        TBKToken.transfer(vault.balances, claimAmount);
 
-        Log("BNK Tokens claimed.");
+        Log("TBK Tokens claimed.");
     }
 
     /**
@@ -148,13 +148,13 @@ contract RewardDAO is IRewardDAO {
 
         Vault vault = savingsContract[msg.sender];
 
-        if (vault.unclaimedBNK != 0) {
-            Log("Claim all of your BNK first!");
+        if (vault.unclaimedTBK != 0) {
+            Log("Claim all of your TBK first!");
             return false;
         }
 
         /// Make sure approve function is called first.
-        bnkToken.transferFrom(msg.sender, address(this), vault.withdrawalFee);
+        TBKToken.transferFrom(msg.sender, address(this), vault.withdrawalFee);
 
         // Transfers all the tokens
         assert(vault.balances.call(bytes4(keccak256("withdraw(address)")), msg.sender));
@@ -164,7 +164,7 @@ contract RewardDAO is IRewardDAO {
         return true;
     }
 
-    function distributeBnkRewards() {
+    function distributeTBKRewards() {
 
     }
 
@@ -198,7 +198,7 @@ contract RewardDAO is IRewardDAO {
     // {
     //     require(search(msg.sender, users));
     //     var v = addressToVaultMap[msg.sender];
-    //     return bancorChanger.getReturn(bnkToken, etherToken, vault.unclaimeDAO);
+    //     return bancorChanger.getReturn(TBKToken, etherToken, vault.unclaimeDAO);
     // }
 
     /**

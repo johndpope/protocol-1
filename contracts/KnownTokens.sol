@@ -1,6 +1,6 @@
 pragma solidity ^0.4.15;
 
-import './BNK.sol';
+import './TBK.sol';
 import './bancor_contracts/EtherToken.sol';
 import './PriceDiscovery.sol';
 
@@ -12,7 +12,7 @@ import './bancor_contracts/interfaces/ITokenChanger.sol';
     KnownTokens.sol is a shared data store contract between the RewardDAO
     and the user Balances. It allows for a central store for both
     contracts to call access from, and (TODO) opens an API to add
-    more supported tokens to the TokenBnk protocol.
+    more supported tokens to the TokenTBK protocol.
  */
 contract KnownTokens is IKnownTokens {
     ITokenChanger tokenChanger;

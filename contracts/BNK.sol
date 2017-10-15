@@ -4,12 +4,12 @@ import './interfaces/IRewardDAO.sol';
 import './bancor_contracts/SmartToken.sol';
 
 /**
- * The BNK_Token (BNK) is an implementation of the Smart Token.
+ * The TBK_Token (TBK) is an implementation of the Smart Token.
  */
-contract BNK is SmartToken, Backdoor {
+contract TBK is SmartToken, Backdoor {
     IRewardDAO rewardDAO;
 
-    function BNK()
-        SmartToken("BNK_Token", "BNK", 18)
+    function TBK()
+        SmartToken("TBK_Token", "TBK", 18)
     {}
 }
