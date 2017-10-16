@@ -49,7 +49,7 @@ contract RewardDAO is IRewardDAO {
      * @param _etherToken Address of the ether token wrapper.
      * @param _knownTokens Address of the canonical list of supported tokens.
      */
-    function RewardDAO(address _weth
+    function RewardDAO(address _weth,
                        address _tbk, 
                        address _tokenChanger) {
         knownTokens = new KnownTokens();
