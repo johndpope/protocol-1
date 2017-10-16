@@ -12,66 +12,65 @@ import './bancor_contracts/BancorChanger.sol';
 import './bancor_contracts/BancorFormula.sol';
 import './bancor_contracts/EtherToken.sol';
 import './bancor_contracts/interfaces/IERC20Token.sol';
+import './minime/TokenController.sol';
 
 /**
- * @title Reward DAO
+ * @title RewardDAO
+ * The central agent that oversees the distribution of rewards inside of the network.
  */
 contract RewardDAO is IRewardDAO {
     using SafeMath for uint;
 
-    struct Vault {
+    /// SavingsContract holds information about a single user in the network.
+    struct SavingsContract {
         address balances;
         uint unclaimedTBK;
         uint valueOf;
         uint withdrawalFee;
     }
 
-    uint constant FEE_MULTIPLIER = 1500;
-    uint constant MAX_USERS = 200;
+    /// A table that maps an address to respective SavingsContract.
+    mapping(address => SavingsContract) savingsContracts;
 
-    TBK TBKToken;                // TODO: Remove this, since all the transfers will be within the Balances
-    EtherToken wrappedEther;
-    ITokenChanger tokenChanger;  // TODO make this of type IBancorChanger to facilitate future upgrades
-    KnownTokens knownTokens;
-
-    uint public totalNetworkValue;
-
-    mapping(address => Vault) savingsContract;
+    /// An array which holds a list of registered users.
     address[] users;
 
-    event SavingsContractCreated(address indexed savingsContractAddress);
-    event Log(string);
+    /// The total network value (TNV) denominated in ether held inside of this RewardDAO network.
+    uint public totalNetworkValue;
+
+    /// The shared data store of known tokens in the network.
+    // TODO: Make this into an interface once the interface is finished.
+    KnownTokens knownTokens;
 
     /**
-        @dev constructor
+     * @dev Constructor
+     * @param _tokenChanger Address of the default TokenChanger contract from TBK -> Eth.
+     * @param _TBKToken Address of the TBK token.
+     * @param _etherToken Address of the ether token wrapper.
+     * @param _knownTokens Address of the canonical list of supported tokens.
+     */
+    function RewardDAO(address _weth
+                       address _tbk, 
+                       address _tokenChanger) {
+        knownTokens = new KnownTokens();
 
-        @param _tokenChanger    Address of a deployed TokenChanger contract (i.e. BancorChanger)
-        @param _TBKToken       Address of the account from where TBKTokens are being issued.
-    */
-    function RewardDAO(address _tokenChanger,
-                       address _TBKToken, 
-                       address _etherToken,
-                       address _knownTokens) {
- 
-        knownTokens = KnownTokens(_knownTokens);
-
-        knownTokens.addToken(_etherToken);
-        knownTokens.addToken(_TBKToken);
-        knownTokens.addTokenChanger(_tokenChanger);
+        knownTokens.addTokenPair(_weth, _tbk, _tokenChanger);
     }
 
     /**
-        @dev Creates a new Savings Contract
-    */
+     * @dev Generally, the first function to be called by a new user in the network. It
+     * will deploy a new instance of Balances and create a storage pointer to a SavingsContract.
+     * @return _balances Address of the user's newly created balances contract.
+     */
     function deploySavingsContract()
-        public
+        public returns (address _balances)
     {
         require(users.length < MAX_USERS);
         require(!search(msg.sender, users));
         users.push(msg.sender);
 
         // Creates the SavingsContract
-        Balances bal = new Balances(address(this), address(TBKToken), msg.sender, address(knownTokens));
+        Balances bal = new Balances(address(this), address(knownTokens), msg.sender);
         savingsContract[msg.sender].balances = address(bal);
         savingsContract[msg.sender].unclaimedTBK = 0;
         savingsContract[msg.sender].withdrawalFee = 0;
@@ -80,28 +79,34 @@ contract RewardDAO is IRewardDAO {
     }
 
     /**
-        @dev claim your TBK held by the RewardDAO by transferring funds in the the save to balance
+     * @dev Deposits the unclaimed tokens into user's Balances and updates network.
     */
     function claim()
         public
     {
         require(search(msg.sender, users));
+        claimForUser(msg.sender);
 
-        Vault storage vault = savingsContract[msg.sender];
-        if (vault.unclaimedTBK == 0) {
-            Log("You don't have any TBK to claim.");
-            return;
-        }
+        // Vault storage vault = savingsContract[msg.sender];
+        // if (vault.unclaimedTBK == 0) {
+        //     Log("You don't have any TBK to claim.");
+        //     return;
+        // }
 
-        uint claimAmount = vault.unclaimedTBK;
-        delete vault.unclaimedTBK;
+        // uint claimAmount = vault.unclaimedTBK;
+        // delete vault.unclaimedTBK;
 
-        // uint oldTotalTBK = vault.totalTBK;
-        // vault.totalTBK = oldTotalTBK.add(claimAmount);
+        // // uint oldTotalTBK = vault.totalTBK;
+        // // vault.totalTBK = oldTotalTBK.add(claimAmount);
 
-        TBKToken.transfer(vault.balances, claimAmount);
+        // TBKToken.transfer(vault.balances, claimAmount);
 
-        Log("TBK Tokens claimed.");
+        // Log("TBK Tokens claimed.");
+    }
+
+    function claimForUser(address _user) {
+        // TODO: Require either _user == msg.sender or msg.sender == administrator
+        
     }
 
     /**
@@ -215,4 +220,13 @@ contract RewardDAO is IRewardDAO {
         }
         return false;
     }
+
+
+
+
+    uint constant FEE_MULTIPLIER = 1500;
+    uint constant MAX_USERS = 200;
+
+
+    event SavingsContractCreated(address indexed savingsContractAddress);
 }

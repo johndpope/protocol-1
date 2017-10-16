@@ -9,29 +9,27 @@ import './interfaces/IKnownTokens.sol';
 import './bancor_contracts/interfaces/ITokenChanger.sol';
 
 /**
-    KnownTokens.sol is a shared data store contract between the RewardDAO
-    and the user Balances. It allows for a central store for both
-    contracts to call access from, and (TODO) opens an API to add
-    more supported tokens to the TokenTBK protocol.
+ * @title KnownTokens
+ * Shared data store contract which keeps track of all of the known tokens
+ * of the network and exposes an API for RewardDAO and user Balances to access
+ * this information.
  */
 contract KnownTokens is IKnownTokens {
     ITokenChanger tokenChanger;
 
-    //    EG. priceDiscovery[token1][token2].exchangeRate();
-    mapping(address => mapping(address => IPriceDiscovery)) priceDiscoveryMap;
+    /// Takes a token pair and discovers the address of the Token Changer.
+    mapping(address => mapping(address => ITokenChanger)) priceDiscoveryMap;
 
     address[20] public allKnownTokens;
     uint8 constant public MAX_TOKENS = 20;
 
-    /**
-        @dev constructor
-
-        @param  _tokenChanger   Address of the token changer (i.e. Bancor changer)
-
-    */
-    function KnownTokens(ITokenChanger _tokenChanger) {
-        tokenChanger = _tokenChanger;
-    }
+    // /**
+    //  * @dev Constructor
+    //  * @param  _tokenChanger   Address of the token changer (i.e. Bancor changer)
+    //  */
+    // function KnownTokens(ITokenChanger _tokenChanger) {
+    //     tokenChanger = _tokenChanger;
+    // }
 
     /**
         @dev Given the address of two tokens, determines what the conversion is, i.e.
@@ -51,25 +49,27 @@ contract KnownTokens is IKnownTokens {
     }
 
     /**
-        @dev constructor
-
-        @param  _newTokenAddr      Address of the new token being added
+     * @dev Adds a new token pair with the price discovery method into the network.
+     * @param _tokenOne A token to be added.
+     * @param _tokenTwo A token to be added.
+     * @param _tokenChanger The token changer which allows for price discovery between the two tokens.
     */
-    function addToken(address _newTokenAddr)
-        public returns (bool success)
+    function addTokenPair(address _tokenOne, address _tokenTwo, address _tokenChanger)
+        // TODO: Add onlyOwner or onlyRewardDAO modifier
+        public returns (bool)
     {
-        for (uint8 i = 0; i < MAX_TOKENS; ++i) {
-            if (allKnownTokens[i] == 0x0) {
-                allKnownTokens[i] = _newTokenAddr;
-                return true;
-            }
+        require(allKnownTokens.length <= MAX_TOKENS - 2);
+        for (uint i = 0; i < allKnownTokens.length; i++) {
+            
         }
-        return false;
+        priceDiscoveryMap[_tokenOne][_tokenTwo] = ITokenChanger(_tokenChanger);
+        return true; //priceDiscoveryMap[_tokenOne][_tokenTwo].exists();
     }
 
     function allTokens()
         public constant returns (address[20])
     {
+        
         return allKnownTokens;
     }
 

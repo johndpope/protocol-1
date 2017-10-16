@@ -9,38 +9,34 @@ import './interfaces/IBalances.sol';
 import './interfaces/IKnownTokens.sol';
 
 /**
- * @title Balances.sol
- * Holds all user funds in an isolated and secure contract and allows interoperability with the RewardDAO.
+ * @title Balances
+ * A contract that holds users funds securely.
  */
 contract Balances is IBalances {
     using SafeMath for uint;
 
-    TBK TBKToken;                        // Address of the TBK Token
-    IRewardDAO rewardDAO;                // Address of the Reward DAO
+    /// Address of the RewardDAO that deployed this contract.
+    IRewardDAO rewardDAO;
+
+    /// Address of the shared data store of known tokens in the network.
     KnownTokens knownTokens;
 
-    address user;                        // Address of the user who owns funds in this contract
+    /// Address of the user whose funds are kept in this contract.
+    address user;
+
+    /// A flag to determine if this contract has been withdrawn from.
     bool withdrawn = false;
 
-    /// Deposit Event for when a user sends funds
-    event Deposit(uint indexed amount, address token);
-
-    /// Withdrawal Event for when a user pays withdrawal fee and pulls funds
-    event Withdraw();
-
     /**
-        @dev constructor
-
-        @param _rewardDAO Address of the Reward DAO
-        @param _TBKToken  Address of TBK Token
-        @param _user      The user whose funds are stored in the contract
-    */
+     * @dev Constructor
+     * @param _rewardDAO Address of the RewardDAO that deployed this contract.
+     * @param _ knownTokens Address of the shared data store.
+     * @param _user Address of the user whose funds are stored in this contract.
+     */
     function Balances(address _rewardDAO,
-                      address _TBKToken,
-                      address _user,
-                      address _knownTokens) {
+                      address _knownTokens,
+                      address _user) {
         rewardDAO = IRewardDAO(_rewardDAO);
-        TBKToken = TBK(_TBKToken); 
         knownTokens = KnownTokens(_knownTokens);                   
         user = _user;
     }
@@ -57,9 +53,8 @@ contract Balances is IBalances {
     }
 
     /**
-        @dev Deposits a token into the user funds contract
-
-         @param _user     Address of the user whose savings contract is being added to
+     * @dev Pulls the tokens into the contract.
+     * @param _user     Address of the user whose savings contract is being added to
          @param _token    Address of the ERC20 token being deposited, 0x0 for ether
          @param _amount   Amount of said token being deposited into savings contract
     */
@@ -160,4 +155,9 @@ contract Balances is IBalances {
         constant returns (uint)
     {
     }
+    /// Deposit Event for when a user sends funds
+    event Deposit(uint indexed amount, address token);
+
+    /// Withdrawal Event for when a user pays withdrawal fee and pulls funds
+    event Withdraw();
 }
