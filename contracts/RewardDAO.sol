@@ -3,10 +3,10 @@ pragma solidity ^0.4.17;
 import './interfaces/IRewardDAO.sol';
 import './interfaces/IKnownTokens.sol';
 
-import './TBK.sol';
 import './Balances.sol';
-import './SafeMath.sol';
 import './KnownTokens.sol';
+import './SafeMath.sol';
+import './TBK.sol';
 
 import './bancor_contracts/BancorChanger.sol';
 import './bancor_contracts/BancorFormula.sol';
@@ -106,7 +106,7 @@ contract RewardDAO is IRewardDAO {
 
     function claimForUser(address _user) {
         // TODO: Require either _user == msg.sender or msg.sender == administrator
-        
+          
     }
 
     /**
