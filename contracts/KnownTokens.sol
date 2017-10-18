@@ -32,23 +32,6 @@ contract KnownTokens is IKnownTokens {
     // }
 
     /**
-        @dev Given the address of two tokens, determines what the conversion is, i.e.
-        how many of token1 are in a single token2
-
-        @param  _fromToken   FROM token address (i.e. conversion source)
-        @param  _toToken     TO   token address (i.e. conversion destination)
-
-    */
-    function recoverPrice(address _fromToken, address _toToken)
-        public constant returns (uint)
-    {
-        //TODO: implement function
-        assert(_fromToken != _toToken); // ensure not doing useless conversion to same token
-        var res = priceDiscoveryMap[_fromToken][_toToken];
-        return res.exchangeRate();
-    }
-
-    /**
      * @dev Adds a new token pair with the price discovery method into the network.
      * @param _tokenOne A token to be added.
      * @param _tokenTwo A token to be added.
@@ -66,6 +49,9 @@ contract KnownTokens is IKnownTokens {
         return true; //priceDiscoveryMap[_tokenOne][_tokenTwo].exists();
     }
 
+    /**
+     * @dev Returns an array of known tokens in the network.
+     */
     function allTokens()
         public constant returns (address[20])
     {
@@ -74,10 +60,9 @@ contract KnownTokens is IKnownTokens {
     }
 
     /**
-        @dev Generic search function for finding an entry in address array.
-
-        @param _token   Address of the token of interest (to see whether registered)
-        @return  boolean indicating if the token was previously registered (true) or not (false)
+     * @dev Function to return true if an address is a known token in this contract.
+     * @param _token Address of the token being checked.
+        @return bool True if it is known, false if not.
     */
     function containsToken(address _token)
         public constant returns (bool)
@@ -89,5 +74,22 @@ contract KnownTokens is IKnownTokens {
     }
 
     function addTokenChanger(address _tokenChanger) {
+    }
+
+    /**
+        @dev Given the address of two tokens, determines what the conversion is, i.e.
+        how many of token1 are in a single token2
+
+        @param  _fromToken   FROM token address (i.e. conversion source)
+        @param  _toToken     TO   token address (i.e. conversion destination)
+
+    */
+    function recoverPrice(address _fromToken, address _toToken)
+        public constant returns (uint)
+    {
+        //TODO: implement function
+        assert(_fromToken != _toToken); // ensure not doing useless conversion to same token
+        var res = priceDiscoveryMap[_fromToken][_toToken];
+        return res.exchangeRate();
     }
 }

@@ -69,7 +69,7 @@ contract RewardDAO is IRewardDAO {
         require(!search(msg.sender, users));
         users.push(msg.sender);
 
-        // Creates the SavingsContract
+        /// Create the SavingsContract
         Balances bal = new Balances(address(this), address(knownTokens), msg.sender);
         savingsContract[msg.sender].balances = address(bal);
         savingsContract[msg.sender].unclaimedTBK = 0;
@@ -77,6 +77,35 @@ contract RewardDAO is IRewardDAO {
 
         SavingsContractCreated(msg.sender);
     }
+
+    /**
+     * @dev The function users will call to deposit a token.
+     * @param _token Address of the token to be deposited.
+     * @param _amount Amount to be deposited.
+     */
+    function deposit(address _token, uint _amount)
+        public
+    {
+        require(_amount > 0);
+        require(knownTokens.containsToken(_token));
+        require(search(msg.sender, users));
+
+        IERC20Token token = IERC20Token(_token);
+        require(token.balanceOf(msg.sender) > _amount);
+
+        SavingsContract storage sC = savingsContract[msg.sender];
+
+        uint valueOfHoldings = sC.valueOf;
+        uint tokenValueInEther = knownTokens.recoverPrice(_token, address(wrappedEther)).mul(_amount);
+        uint newValue = valueOfHoldings.add(tokenValueInEther);
+        sC.valueOf = newValue;
+
+        sC.withdrawalFee = calcFee(sC, newValue);
+        /// TODO: Check that the value.balances is approved for the token amount from user first
+        assert(vault.balances.call(bytes4(keccak256("pullDeposit(address,address,uint256")), msg.sender, _token, _amount));
+        Log("Deposit successful!");
+    }
+
 
     /**
      * @dev Deposits the unclaimed tokens into user's Balances and updates network.
@@ -107,36 +136,6 @@ contract RewardDAO is IRewardDAO {
     function claimForUser(address _user) {
         // TODO: Require either _user == msg.sender or msg.sender == administrator
           
-    }
-
-    /**
-        @dev user facing deposit function
-        TODO: UPDATE THE WITHDRAWAL FEE.
-
-         @param _token    Address of the ERC20 token being deposited, or the ether wrapper
-         @param _amount   Amount of said token being deposited into save
-    */
-    function deposit(address _token, uint _amount)
-        public
-    {
-        require(_amount > 0);
-        require(knownTokens.containsToken(_token));
-        require(search(msg.sender, users));
-
-        IERC20Token token = IERC20Token(_token);
-        require(token.balanceOf(msg.sender) > _amount);
-
-        Vault storage vault = savingsContract[msg.sender];
-
-        uint valueOfHoldings = vault.valueOf;
-        uint tokenValueInEther = knownTokens.recoverPrice(_token, address(wrappedEther)).mul(_amount);
-        uint newValue = valueOfHoldings.add(tokenValueInEther);
-        vault.valueOf = newValue;
-
-        vault.withdrawalFee = calcFee(vault, newValue);
-        /// TODO: Check that the value.balances is approved for the token amount from user first
-        assert(vault.balances.call(bytes4(keccak256("pullDeposit(address,address,uint256")), msg.sender, _token, _amount));
-        Log("Deposit successful!");
     }
 
     /**
