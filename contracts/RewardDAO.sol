@@ -96,14 +96,13 @@ contract RewardDAO is IRewardDAO {
         SavingsContract storage sC = savingsContract[msg.sender];
 
         uint valueOfHoldings = sC.valueOf;
-        uint tokenValueInEther = knownTokens.recoverPrice(_token, address(wrappedEther)).mul(_amount);
+        uint tokenValueInEther = knownTokens.recoverPrice(_token).mul(_amount);
         uint newValue = valueOfHoldings.add(tokenValueInEther);
         sC.valueOf = newValue;
 
         sC.withdrawalFee = calcFee(sC, newValue);
         /// TODO: Check that the value.balances is approved for the token amount from user first
         assert(vault.balances.call(bytes4(keccak256("pullDeposit(address,address,uint256")), msg.sender, _token, _amount));
-        Log("Deposit successful!");
     }
 
 

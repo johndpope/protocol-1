@@ -84,12 +84,13 @@ contract KnownTokens is IKnownTokens {
         @param  _toToken     TO   token address (i.e. conversion destination)
 
     */
-    function recoverPrice(address _fromToken, address _toToken)
+    function exchangeRate(address _fromToken, address _toToken)
         public constant returns (uint)
     {
-        //TODO: implement function
-        assert(_fromToken != _toToken); // ensure not doing useless conversion to same token
-        var res = priceDiscoveryMap[_fromToken][_toToken];
-        return res.exchangeRate();
+        /// Ensure the two tokens are different.
+        assert(_fromToken != _toToken);
+
+        ITokenChanger changer = priceDiscoveryMap[_fromToken][_toToken];
+        return changer.getReturn
     }
 }
