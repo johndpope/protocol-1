@@ -43,6 +43,9 @@ contract RewardDAO is IRewardDAO {
     // TODO: Make this into an interface once the interface is finished.
     KnownTokens knownTokens;
 
+    /// Wrapped ether token.
+    address weth;
+
     /// Canonical TBK token.
     address tbk;
 
@@ -59,6 +62,7 @@ contract RewardDAO is IRewardDAO {
         knownTokens = new KnownTokens();
 
         knownTokens.addTokenPair(_weth, _tbk, _tokenChanger);
+        weth = _weth;
         tbk = _tbk;
     }
 

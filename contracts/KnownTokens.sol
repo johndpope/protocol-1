@@ -7,6 +7,7 @@ import './PriceDiscovery.sol';
 import './interfaces/IPriceDiscovery.sol';
 import './interfaces/IKnownTokens.sol';
 import './bancor_contracts/interfaces/ITokenChanger.sol';
+import './bancor_contracts/interfaces/IERC20Token.sol';
 
 /**
  * @title KnownTokens
@@ -84,13 +85,13 @@ contract KnownTokens is IKnownTokens {
         @param  _toToken     TO   token address (i.e. conversion destination)
 
     */
-    function exchangeRate(address _fromToken, address _toToken)
+    function getReturn(address _fromToken, address _toToken, uint _amount)
         public constant returns (uint)
     {
         /// Ensure the two tokens are different.
         assert(_fromToken != _toToken);
 
         ITokenChanger changer = priceDiscoveryMap[_fromToken][_toToken];
-        return changer.getReturn
+        return changer.getReturn(IERC20Token(_fromToken), IERC20Token(_toToken), _amount);
     }
 }
