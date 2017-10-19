@@ -27,6 +27,7 @@ contract RewardDAO is IRewardDAO {
         uint unclaimedTBK;
         uint valueOf;
         uint withdrawalFee;
+        uint stakeInSystem;
     }
 
     /// A table that maps an address to respective SavingsContract.
@@ -42,6 +43,9 @@ contract RewardDAO is IRewardDAO {
     // TODO: Make this into an interface once the interface is finished.
     KnownTokens knownTokens;
 
+    /// Canonical TBK token.
+    address tbk;
+
     /**
      * @dev Constructor
      * @param _tokenChanger Address of the default TokenChanger contract from TBK -> Eth.
@@ -55,6 +59,7 @@ contract RewardDAO is IRewardDAO {
         knownTokens = new KnownTokens();
 
         knownTokens.addTokenPair(_weth, _tbk, _tokenChanger);
+        tbk = _tbk;
     }
 
     /**
@@ -84,11 +89,11 @@ contract RewardDAO is IRewardDAO {
      * @param _amount Amount to be deposited.
      */
     function deposit(address _token, uint _amount)
-        public
+        public returns (bool)
     {
         require(_amount > 0);
         require(knownTokens.containsToken(_token));
-        require(search(msg.sender, users));
+        require(savingsContract[msg.sender].balances != 0x0);
 
         IERC20Token token = IERC20Token(_token);
         require(token.balanceOf(msg.sender) > _amount);
@@ -101,68 +106,64 @@ contract RewardDAO is IRewardDAO {
         sC.valueOf = newValue;
 
         sC.withdrawalFee = calcFee(sC, newValue);
+        sC.stakeInSystem = stakeInSystem(msg.sender);
         /// TODO: Check that the value.balances is approved for the token amount from user first
-        assert(vault.balances.call(bytes4(keccak256("pullDeposit(address,address,uint256")), msg.sender, _token, _amount));
+        assert(sC.balances.call(bytes4(keccak256("pullDeposit(address,address,uint256")), msg.sender, _token, _amount));
+        return true;
     }
 
 
     /**
-     * @dev Deposits the unclaimed tokens into user's Balances and updates network.
+     * @dev Deposits the unclaimed rewards into user's Savings Contract.
     */
     function claim()
         public
     {
-        require(search(msg.sender, users));
+        require(savingsContract[msg.sender].balances != 0x0);
         claimForUser(msg.sender);
-
-        // Vault storage vault = savingsContract[msg.sender];
-        // if (vault.unclaimedTBK == 0) {
-        //     Log("You don't have any TBK to claim.");
-        //     return;
-        // }
-
-        // uint claimAmount = vault.unclaimedTBK;
-        // delete vault.unclaimedTBK;
-
-        // // uint oldTotalTBK = vault.totalTBK;
-        // // vault.totalTBK = oldTotalTBK.add(claimAmount);
-
-        // TBKToken.transfer(vault.balances, claimAmount);
-
-        // Log("TBK Tokens claimed.");
     }
 
-    function claimForUser(address _user) {
-        // TODO: Require either _user == msg.sender or msg.sender == administrator
-          
-    }
-
-    /**
-        @dev withdraws entirety of the vault into user's balance and destroys the vault
-        TODO: Implement snapshots on every block so we can keep track of people's overall stake in the system.
-    */
-    function withdraw()
-        public
-        returns (bool)
+    function claimForUser(address _user)
+        public returns (bool)
     {
-        require(search(msg.sender, users));
-        require(vault.withdrawalFee > 0);
+        // TODO: Require either _user == msg.sender or msg.sender == administrator
+        require(_user == msg.sender);
 
-        Vault memory vault = savingsContract[msg.sender];
-
-        if (vault.unclaimedTBK != 0) {
-            Log("Claim all of your TBK first!");
+        SavingsContract storage sC = savingsContract[msg.sender];
+        if (sC.unclaimedTBK == 0) {
             return false;
         }
 
+        uint claimAmount = sC.unclaimedTBK;
+        delete sC.unclaimedTBK;
+
+        deposit(tbk, claimAmount);
+        return true;
+    }
+
+    /**
+     * @dev Withdraws all the tokens from the Savings Contract.
+        TODO: Implement snapshots on every block so we can keep track of people's overall stake in the system.
+    */
+    function withdraw()
+        public returns (bool)
+    {
+        require(savingsContract[msg.sender].balances != 0x0);
+
+        SavingsContract memory sC = savingsContract[msg.sender];
+        require(sC.withdrawalFee > 0);
+
+        if (sC.unclaimedTBK != 0) {
+            claimForUser(msg.sender);
+        }
+
         /// Make sure approve function is called first.
-        TBKToken.transferFrom(msg.sender, address(this), vault.withdrawalFee);
+        TBKToken.transferFrom(msg.sender, address(this), sC.withdrawalFee);
 
         // Transfers all the tokens
-        assert(vault.balances.call(bytes4(keccak256("withdraw(address)")), msg.sender));
+        assert(sC.balances.call(bytes4(keccak256("withdraw(address)")), msg.sender));
 
         delete savingsContract[msg.sender];
-        Log("Withdraw successful!");
         return true;
     }
 
@@ -175,7 +176,7 @@ contract RewardDAO is IRewardDAO {
 // Private Helper Functions
 /////
 
-    function calcFee(Vault _vault, uint _newValue)
+    function calcWithdrawFee(SavingsContract _sC, uint _newValue)
         private constant returns (uint)
     {
         uint oldFee = _vault.withdrawalFee;
@@ -210,21 +211,21 @@ contract RewardDAO is IRewardDAO {
         @param _pool    The array we search in
         @return  boolean indicating if the entry was found (true) or not (false)
     */
-    function search(address _query, address[] _pool)
-        constant returns (bool)
-    {
-        for (uint i = 0; i < _pool.length; ++i) {
-            if (_query == _pool[i]) {return true;}
-        }
-        return false;
-    }
+    // function search(address _query, address[] _pool)
+    //     constant returns (bool)
+    // {
+    //     for (uint i = 0; i < _pool.length; ++i) {
+    //         if (_query == _pool[i]) {return true;}
+    //     }
+    //     return false;
+    // }
 
 
 
 
-    uint constant FEE_MULTIPLIER = 1500;
-    uint constant MAX_USERS = 200;
+    // uint constant FEE_MULTIPLIER = 1500;
+    // uint constant MAX_USERS = 200;
 
 
-    event SavingsContractCreated(address indexed savingsContractAddress);
+    // event SavingsContractCreated(address indexed savingsContractAddress);
 }
