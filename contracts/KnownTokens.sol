@@ -15,7 +15,7 @@ import './bancor_contracts/interfaces/IERC20Token.sol';
  * of the network and exposes an API for RewardDAO and user Balances to access
  * this information.
  */
-contract KnownTokens is IKnownTokens {
+contract KnownTokens {
     ITokenChanger tokenChanger;
 
     /// Takes a token pair and discovers the address of the Token Changer.

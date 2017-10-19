@@ -4,7 +4,7 @@ import './interfaces/IOwned.sol';
 /*
     Provides support and utilities for contract ownership
 */
-contract Owned is IOwned {
+contract Owned {
     address public owner;
     address public newOwner;
 

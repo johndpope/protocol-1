@@ -18,7 +18,7 @@ import './minime/TokenController.sol';
  * @title RewardDAO
  * The central agent that oversees the distribution of rewards inside of the network.
  */
-contract RewardDAO is IRewardDAO {
+contract RewardDAO {
     using SafeMath for uint;
 
     /// SavingsContract holds information about a single user in the network.
@@ -31,7 +31,7 @@ contract RewardDAO is IRewardDAO {
     }
 
     /// A table that maps an address to respective SavingsContract.
-    mapping(address => SavingsContract) savingsContracts;
+    mapping(address => SavingsContract) savingsContract;
 
     /// An array which holds a list of registered users.
     address[] users;
@@ -51,10 +51,9 @@ contract RewardDAO is IRewardDAO {
 
     /**
      * @dev Constructor
+     * @param _weth Address of the ether token wrapper.
+     * @param _tbk Address of the TBK token.
      * @param _tokenChanger Address of the default TokenChanger contract from TBK -> Eth.
-     * @param _TBKToken Address of the TBK token.
-     * @param _etherToken Address of the ether token wrapper.
-     * @param _knownTokens Address of the canonical list of supported tokens.
      */
     function RewardDAO(address _weth,
                        address _tbk, 
@@ -74,8 +73,9 @@ contract RewardDAO is IRewardDAO {
     function deploySavingsContract()
         public returns (address _balances)
     {
-        require(users.length < MAX_USERS);
-        require(!search(msg.sender, users));
+        require(users.length < 100);
+        require(savingsContract[msg.sender].balances == 0x0);
+        // require(!search(msg.sender, users));
         users.push(msg.sender);
 
         /// Create the SavingsContract
@@ -84,7 +84,7 @@ contract RewardDAO is IRewardDAO {
         savingsContract[msg.sender].unclaimedTBK = 0;
         savingsContract[msg.sender].withdrawalFee = 0;
 
-        SavingsContractCreated(msg.sender);
+        // SavingsContractCreated(msg.sender);
     }
 
     /**
@@ -105,11 +105,11 @@ contract RewardDAO is IRewardDAO {
         SavingsContract storage sC = savingsContract[msg.sender];
 
         uint valueOfHoldings = sC.valueOf;
-        uint tokenValueInEther = knownTokens.recoverPrice(_token).mul(_amount);
+        uint tokenValueInEther = 1;//knownTokens.recoverPrice(_token).mul(_amount);
         uint newValue = valueOfHoldings.add(tokenValueInEther);
         sC.valueOf = newValue;
 
-        sC.withdrawalFee = calcFee(sC, newValue);
+        sC.withdrawalFee = calcWithdrawFee(sC, newValue);
         sC.stakeInSystem = stakeInSystem(msg.sender);
         /// TODO: Check that the value.balances is approved for the token amount from user first
         assert(sC.balances.call(bytes4(keccak256("pullDeposit(address,address,uint256")), msg.sender, _token, _amount));
@@ -162,7 +162,7 @@ contract RewardDAO is IRewardDAO {
         }
 
         /// Make sure approve function is called first.
-        TBKToken.transferFrom(msg.sender, address(this), sC.withdrawalFee);
+        IERC20Token(tbk).transferFrom(msg.sender, address(this), sC.withdrawalFee);
 
         // Transfers all the tokens
         assert(sC.balances.call(bytes4(keccak256("withdraw(address)")), msg.sender));
@@ -183,8 +183,8 @@ contract RewardDAO is IRewardDAO {
     function calcWithdrawFee(SavingsContract _sC, uint _newValue)
         private constant returns (uint)
     {
-        uint oldFee = _vault.withdrawalFee;
-        uint newFee = _newValue.mul(FEE_MULTIPLIER); 
+        uint oldFee = _sC.withdrawalFee;
+        uint newFee = _newValue.mul(1); 
 
         // The withdrawal fee can never be lower, thereby resisting gaming the system
         if (newFee < oldFee) { 
@@ -192,6 +192,10 @@ contract RewardDAO is IRewardDAO {
         } else {
             return newFee;
         }
+    }
+    
+    function stakeInSystem(address _address) public returns (uint) {
+        return 2;
     }
 
     /**

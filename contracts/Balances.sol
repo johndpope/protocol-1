@@ -12,7 +12,7 @@ import './interfaces/IKnownTokens.sol';
  * @title Balances
  * A contract that holds users funds securely.
  */
-contract Balances is IBalances {
+contract Balances {
     using SafeMath for uint;
 
     /// Address of the RewardDAO that deployed this contract.
@@ -36,7 +36,7 @@ contract Balances is IBalances {
     /**
      * @dev Constructor
      * @param _rewardDAO Address of the RewardDAO that deployed this contract.
-     * @param _ knownTokens Address of the shared data store.
+     * @param _knownTokens Address of the shared data store.
      * @param _user Address of the user whose funds are stored in this contract.
      */
     function Balances(address _rewardDAO,
@@ -87,7 +87,6 @@ contract Balances is IBalances {
      * Must be called from the known RewardDAO contract.
      * @param _user Address of the user whose savings contract is being drawn from. 
      *              Must be the same as the owner of the safe/balance
-     * @param _token Address of the ERC20 token being deposited, or the ether wrapper
      */
     function withdraw(address _user)
         onlyRewardDAO
