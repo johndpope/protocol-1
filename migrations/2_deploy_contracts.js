@@ -1,7 +1,7 @@
 /* global artifacts */
 
-const TBK          = artifacts.require('TBK.sol');
-const RewardDAO   = artifacts.require('RewardDAO.sol');
+const TBK = artifacts.require('TBK.sol');
+const RewardDAO = artifacts.require('RewardDAO.sol');
 const KnownTokens = artifacts.require('KnownTokens.sol');
 
 // below are all the bancor defined contracts
