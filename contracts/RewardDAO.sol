@@ -79,7 +79,7 @@ contract RewardDAO is IRewardDAO {
         users.push(msg.sender);
 
         /// Create the SavingsContract
-        Balances bal = new Balances(address(this), address(knownTokens), msg.sender);
+        Balances bal = new Balances(address(this), address(knownTokens), msg.sender, weth, tbk);
         savingsContract[msg.sender].balances = address(bal);
         savingsContract[msg.sender].unclaimedTBK = 0;
         savingsContract[msg.sender].withdrawalFee = 0;

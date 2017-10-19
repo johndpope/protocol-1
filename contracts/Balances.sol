@@ -27,6 +27,12 @@ contract Balances is IBalances {
     /// A flag to determine if this contract has been withdrawn from.
     bool withdrawn = false;
 
+    /// Wrapped ether token.
+    address weth;
+
+    /// Canonical TBK token.
+    address tbk;
+
     /**
      * @dev Constructor
      * @param _rewardDAO Address of the RewardDAO that deployed this contract.
@@ -35,9 +41,13 @@ contract Balances is IBalances {
      */
     function Balances(address _rewardDAO,
                       address _knownTokens,
-                      address _user) {
+                      address _user,
+                      address _weth,
+                      address _tbk) {
         rewardDAO = IRewardDAO(_rewardDAO);
-        knownTokens = KnownTokens(_knownTokens);                   
+        knownTokens = KnownTokens(_knownTokens); 
+        weth = _weth;
+        tbk = _tbk;                  
         user = _user;
     }
 
@@ -54,17 +64,17 @@ contract Balances is IBalances {
 
     /**
      * @dev Pulls the tokens into the contract.
-     * @param _user     Address of the user whose savings contract is being added to
-         @param _token    Address of the ERC20 token being deposited, 0x0 for ether
-         @param _amount   Amount of said token being deposited into savings contract
-    */
+     * @param _user Address of the user whose savings contract is being added to
+     * @param _token Address of the ERC20 token being deposited.
+     * @param _amount Amount of said token being deposited into savings contract.
+     */
     function pullDeposit(address _user, address _token, uint _amount)
         external
         onlyRewardDAO
         onlyNotWithdrawn
         returns (bool)
     {
-        require(knownTokens.containsToken(_token));
+        // require(knownTokens.containsToken(_token));
         
         IERC20Token token = IERC20Token(_token);
         token.transferFrom(_user, address(this), _amount);
@@ -73,13 +83,12 @@ contract Balances is IBalances {
     }
 
     /**
-        @dev Withdraws said token from the balance to the original token holder account.
-             Must be called from the known RewardDAO contract.
-
-         @param _user     Address of the user whose savings contract is being drawn from
-                          Must be the same as the owner of the safe/balance
-         @param _token    Address of the ERC20 token being deposited, or the ether wrapper
-    */
+     * @dev Withdraws said token from the balance to the original token holder account.
+     * Must be called from the known RewardDAO contract.
+     * @param _user Address of the user whose savings contract is being drawn from. 
+     *              Must be the same as the owner of the safe/balance
+     * @param _token Address of the ERC20 token being deposited, or the ether wrapper
+     */
     function withdraw(address _user)
         onlyRewardDAO
         onlyNotWithdrawn
@@ -101,17 +110,13 @@ contract Balances is IBalances {
         return true;
     }
 
-    ///TODO add a function to switch out the known tokens contract.
-
     /**
-        @dev Returns the balance (in TBK) of the Savings Contract associated with user
-
-        @param _account User for which Balance amount to be read.
-    */
-    function queryBalance(address _account)
+     * @dev Returns the TBK of this Savings Contract.
+     */
+    function queryTBKBalance()
         public constant returns (uint)
     {
-        return TBKToken.balanceOf(_account);
+        return IERC20Token(tbk).balanceOf(this);
     }
 
     /** ----------------------------------------------------------------------------
@@ -138,8 +143,8 @@ contract Balances is IBalances {
     }
 
     /**
-        @dev Sets the new KnownTokens address
-    */
+     * @dev Sets the new KnownTokens address
+     */
     function setKnownTokens(address _newKnownTokens) 
         onlyRewardDAO
     {
@@ -151,10 +156,6 @@ contract Balances is IBalances {
         knownTokens = KnownTokens(_newKnownTokens);
     }
 
-    function totalTBK() 
-        constant returns (uint)
-    {
-    }
     /// Deposit Event for when a user sends funds
     event Deposit(uint indexed amount, address token);
 
