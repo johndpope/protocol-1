@@ -1,0 +1,29 @@
+{
+  "name": "protocol",
+  "version": "1.0.0",
+  "description": "",
+  "main": "docs/index.html",
+  "directories": {
+    "doc": "docs"
+  },
+  "dependencies": {
+    "bignumber": "^1.1.0",
+    "bignumber.js": "^4.1.0"
+  },
+  "scripts": {
+    "test": "null"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TokenBnk/protocol.git"
+  },
+  "author": "TokenBnk",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/TokenBnk/protocol/issues"
+  },
+  "homepage": "https://tokenbnk.github.io/protocol/",
+  "devDependencies": {
+    "@digix/doxity": "^0.5.2"
+  }
+}
