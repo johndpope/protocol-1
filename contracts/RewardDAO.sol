@@ -119,7 +119,7 @@ contract RewardDAO {
 
     /**
      * @dev Deposits the unclaimed rewards into user's Savings Contract.
-    */
+     */
     function claim()
         public
     {
@@ -127,6 +127,9 @@ contract RewardDAO {
         claimForUser(msg.sender);
     }
 
+    /**
+     * @dev Claims the unclaimed rewards for a specific user.
+     */
     function claimForUser(address _user)
         public returns (bool)
     {
@@ -147,8 +150,8 @@ contract RewardDAO {
 
     /**
      * @dev Withdraws all the tokens from the Savings Contract.
-        TODO: Implement snapshots on every block so we can keep track of people's overall stake in the system.
-    */
+     * Possible TODO: Implement snapshots on every block so we can keep track of people's overall stake in the system.
+     */
     function withdraw()
         public returns (bool)
     {
@@ -197,43 +200,4 @@ contract RewardDAO {
     function stakeInSystem(address _address) public returns (uint) {
         return 2;
     }
-
-    /**
-        @dev Returns the amount of money in the save associated with the message sender in ETH
-
-        @return Supply of ETH in the message sender's vault
-    */
-    // function getEthBalance()
-    //     internal
-    //     returns (uint)
-    // {
-    //     require(search(msg.sender, users));
-    //     var v = addressToVaultMap[msg.sender];
-    //     return bancorChanger.getReturn(TBKToken, etherToken, vault.unclaimeDAO);
-    // }
-
-    /**
-        @dev Generic search function for finding an entry in address array.
-
-        @param _query   Address being investigated
-        @param _pool    The array we search in
-        @return  boolean indicating if the entry was found (true) or not (false)
-    */
-    // function search(address _query, address[] _pool)
-    //     constant returns (bool)
-    // {
-    //     for (uint i = 0; i < _pool.length; ++i) {
-    //         if (_query == _pool[i]) {return true;}
-    //     }
-    //     return false;
-    // }
-
-
-
-
-    // uint constant FEE_MULTIPLIER = 1500;
-    // uint constant MAX_USERS = 200;
-
-
-    // event SavingsContractCreated(address indexed savingsContractAddress);
 }

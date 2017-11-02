@@ -2,9 +2,7 @@ pragma solidity ^0.4.17;
 
 import './TBK.sol';
 import './bancor_contracts/EtherToken.sol';
-import './PriceDiscovery.sol';
 
-import './interfaces/IPriceDiscovery.sol';
 import './interfaces/IKnownTokens.sol';
 import './bancor_contracts/interfaces/ITokenChanger.sol';
 import './bancor_contracts/interfaces/IERC20Token.sol';
@@ -63,7 +61,7 @@ contract KnownTokens {
     /**
      * @dev Function to return true if an address is a known token in this contract.
      * @param _token Address of the token being checked.
-        @return bool True if it is known, false if not.
+     * @return bool True if it is known, false if not.
     */
     function containsToken(address _token)
         public constant returns (bool)
@@ -78,13 +76,11 @@ contract KnownTokens {
     }
 
     /**
-        @dev Given the address of two tokens, determines what the conversion is, i.e.
-        how many of token1 are in a single token2
-
-        @param  _fromToken   FROM token address (i.e. conversion source)
-        @param  _toToken     TO   token address (i.e. conversion destination)
-
-    */
+     * @dev Queries the TokenChanger.
+     * @param _fromToken Token one.
+     * @param _toToken Token two.
+     * @param _amount Amount of token being converted.
+     */
     function getReturn(address _fromToken, address _toToken, uint _amount)
         public constant returns (uint)
     {

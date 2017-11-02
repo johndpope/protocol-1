@@ -1,8 +1,9 @@
 pragma solidity ^0.4.17;
 
 import './KnownTokens.sol';
-import './TBK.sol';
 import './SafeMath.sol';
+import './TBK.sol';
+import './Util.sol';
 
 import './bancor_contracts/interfaces/IERC20Token.sol';
 import './interfaces/IBalances.sol';
@@ -53,7 +54,7 @@ contract Balances {
 
     modifier onlyRewardDAO() {
         require(msg.sender == address(rewardDAO));
-        require(isContract(rewardDAO));
+        require(Util.isContract(rewardDAO));
         _;
     }
 
@@ -118,29 +119,6 @@ contract Balances {
         return IERC20Token(tbk).balanceOf(this);
     }
 
-    /** ----------------------------------------------------------------------------
-        *                       Private helper functions                             *
-        ---------------------------------------------------------------------------- */
-
-    /**
-        @dev determines whether or not the address pointed to corresponds to a valid contract address
-
-        @param  _addr             Address being investigated
-        @return boolean of whether or not we are looking at valid contract
-    */
-    function isContract(address _addr) 
-        constant internal returns(bool)
-    {
-        uint size;
-        if (_addr == 0) {
-            return false;
-        }
-        assembly {
-            size := extcodesize(_addr)
-        }
-        return size > 0;
-    }
-
     /**
      * @dev Sets the new KnownTokens address
      */
@@ -149,7 +127,7 @@ contract Balances {
     {
         require(knownTokens != _newKnownTokens);
         require(_newKnownTokens != 0x0);
-        require(isContract(_newKnownTokens));
+        require(Util.isContract(_newKnownTokens));
 
         delete knownTokens;
         knownTokens = KnownTokens(_newKnownTokens);
