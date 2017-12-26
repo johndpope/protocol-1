@@ -1,0 +1,212 @@
+.
+├── assets
+│   ├── adapters
+│   │   ├── ApprovalReceiver.sol
+│   │   ├── CompatReceiveAdapter.sol
+│   │   ├── ERC20ReceiveAdapter.sol
+│   │   ├── ERC667ReceiveAdapterMock.sol
+│   │   ├── ERC667ReceiveAdapter.sol
+│   │   ├── ERC667Receiver.sol
+│   │   ├── EtherReceiveAdapter.sol
+│   │   ├── ReceiveAdapterMock.sol
+│   │   ├── ReceiveAdapter.sol
+│   │   └── ReceiveApprovalAdapter.sol
+│   ├── token-derivatives
+│   │   ├── BitcoinCash.sol
+│   │   ├── Dash.sol
+│   │   ├── Dogecoin.sol
+│   │   ├── ERC20Interface.sol
+│   │   ├── Loan.sol
+│   │   ├── Migrations.sol
+│   │   ├── Order.sol
+│   │   ├── ShortSell.sol
+│   │   ├── SimpleStorage.sol
+│   │   ├── Swap.sol
+│   │   ├── SwapToken.sol
+│   │   └── TokenizedSwap.sol
+│   ├── tokenized-assets
+│   │   ├── swap
+│   │   │   ├── Factory.sol
+│   │   │   └── Swap.sol
+│   │   └── thirdpartyintegration
+│   │       ├── AssetRequest.sol
+│   │       ├── Assets.sol
+│   │       ├── AssetToken.sol
+│   │       ├── AssetTypes.sol
+│   │       ├── MPAssetRequests.sol
+│   │       ├── REAssets.sol
+│   │       └── weifund
+│   │           ├── WFAssetInterface.sol
+│   │           ├── WFAssetProxyInterface.sol
+│   │           ├── WFAssetProxy.sol
+│   │           ├── WFAsset.sol
+│   │           ├── WFPlatformEmitter.sol
+│   │           ├── WFPlatformInterface.sol
+│   │           └── WFPlatform.sol
+│   └── tokens
+│       ├── ERC20
+│       │   ├── ERC20BasicImpl.sol
+│       │   ├── ERC20Basic.sol
+│       │   ├── ERC20e.sol
+│       │   ├── ERC20Impl.sol
+│       │   ├── ERC20Interface.sol
+│       │   ├── ERC20.sol
+│       │   ├── ERC20Token.sol
+│       │   └── IERC20Token.sol
+│       ├── ERC667
+│       │   ├── ApprovalNotifyToken.sol
+│       │   ├── ERC667Impl.sol
+│       │   └── ERC667.sol
+│       ├── minimetoken
+│       │   └── MiniMeΤοken.sol
+│       └── token-variants
+│           ├── ExternalToken.sol
+│           ├── RoleBasedEventsToken.sol
+│           ├── SimpleToken.sol
+│           ├── TokenData.sol
+│           └── TokenKYC.sol
+├── banking
+│   ├── ATM.sol
+│   ├── ITokenBank.sol
+│   ├── TokenBank.sol
+│   └── Treasury.sol
+├── client
+│   ├── ClientContract.sol
+│   ├── ClientDetails.sol
+│   ├── ClientDirectory.sol
+│   └── Client.sol
+├── infrastructure
+│   ├── admin
+│   │   ├── Administration.sol
+│   │   ├── AuthAdmin.sol
+│   │   └── Roles.sol
+│   ├── arrays
+│   │   ├── AddressArrays.sol
+│   │   ├── Bytes32Arrays.sol
+│   │   └── Uint256Arrays.sol
+│   ├── helpers
+│   │   └── strings.sol
+│   ├── ledger
+│   │   ├── ITokenLedger.sol
+│   │   └── TokenLedger.sol
+│   ├── lock
+│   │   ├── etherlock.sol
+│   │   └── LICENSE
+│   ├── registries
+│   │   ├── PrivateServiceRegistry.sol
+│   │   ├── TokenRegistry.sol
+│   │   ├── TxRegister.sol
+│   │   └── UserRegistry.sol
+│   ├── safety
+│   │   ├── CheckSign.sol
+│   │   └── InputValidator.sol
+│   ├── storage
+│   │   ├── DataStore.sol
+│   │   └── EternalStorage.sol
+│   └── upgradeable
+│       ├── Forwardable.sol
+│       ├── OwnableUpgradeableImplementation
+│       │   ├── IOwnableUpgradeableImplementation.sol
+│       │   └── OwnableUpgradeableImplementation.sol
+│       ├── SharedStorage.sol
+│       ├── UpgradeableImplementation.sol
+│       └── UpgradeableProxy.sol
+├── legacy
+│   ├── Admin.sol
+│   ├── Backdoor.sol
+│   ├── Balances.sol
+│   ├── bancor_contracts
+│   │   ├── BancorConverterExtensions.sol
+│   │   ├── BancorConverter.sol
+│   │   ├── BancorFormula.sol
+│   │   ├── BancorGasPriceLimit.sol
+│   │   ├── BancorPriceFloor.sol
+│   │   ├── BancorQuickConverter.sol
+│   │   ├── CrowdsaleController.sol
+│   │   ├── ERC20Token.sol
+│   │   ├── EtherToken.sol
+│   │   ├── helpers
+│   │   │   ├── Migrations.sol
+│   │   │   ├── TestBancorFormula.sol
+│   │   │   ├── TestCrowdsaleController.sol
+│   │   │   ├── TestERC20Token.sol
+│   │   │   └── TestUtils.sol
+│   │   ├── interfaces
+│   │   │   ├── IBancorConverterExtensions.sol
+│   │   │   ├── IBancorFormula.sol
+│   │   │   ├── IBancorGasPriceLimit.sol
+│   │   │   ├── IBancorQuickConverter.sol
+│   │   │   ├── IERC20Token.sol
+│   │   │   ├── IEtherToken.sol
+│   │   │   ├── IOwned.sol
+│   │   │   ├── ISmartToken.sol
+│   │   │   ├── ITokenConverter.sol
+│   │   │   └── ITokenHolder.sol
+│   │   ├── Managed.sol
+│   │   ├── Owned.sol
+│   │   ├── SmartTokenController.sol
+│   │   ├── SmartToken.sol
+│   │   ├── TokenHolder.sol
+│   │   └── Utils.sol
+│   ├── contracts.1
+│   │   ├── ERC20.sol
+│   │   ├── Escapable.sol
+│   │   ├── helpers
+│   │   │   └── Migrations.sol
+│   │   ├── Owned.sol
+│   │   ├── SafeMath.sol
+│   │   └── test
+│   │       ├── TestPayableEscapable.sol
+│   │       └── TestToken.sol
+│   ├── controllers
+│   │   └── Owned.sol
+│   ├── helpers
+│   │   ├── Object.sol
+│   │   └── Splitter.sol
+│   ├── interfaces
+│   │   ├── IBalances.sol
+│   │   ├── IERC23.sol
+│   │   ├── IKnownTokens.sol
+│   │   ├── IPriceDiscovery.sol
+│   │   └── IRewardDAO.sol
+│   ├── KnownTokens.sol
+│   ├── Migrations.sol
+│   ├── minime
+│   │   ├── ApproveAndCallFallback.sol
+│   │   ├── Controlled.sol
+│   │   ├── MiniMeTokenFactory.sol
+│   │   ├── MiniMeToken.sol
+│   │   └── TokenController.sol
+│   ├── PriceDiscovery.sol
+│   ├── RewardDAO.sol
+│   ├── SafeMath.sol
+│   ├── TBK.sol
+│   └── users
+├── Map2.mm
+├── transaction
+│   ├── channels
+│   │   ├── Channels.sol
+│   │   ├── PaymentChannel.sol
+│   │   └── PaymentForwarder.sol
+│   ├── claims
+│   │   ├── BalanceClaim.sol
+│   │   └── Claim.sol
+│   ├── dividend
+│   │   ├── Dividend.sol
+│   │   └── IDividend.sol
+│   ├── escrow
+│   │   ├── CuratedTransfers.sol
+│   │   ├── SafeRemotePurchase.sol
+│   │   ├── TokenTransferProxy.sol
+│   │   └── TwoPhaseTransfers.sol
+│   ├── relay
+│   │   ├── deployer.sol
+│   │   ├── simple_storage.sol
+│   │   ├── testtoken.sol
+│   │   └── transaction.sol
+│   └── vesting
+│       └── VestedPayment.sol
+├── tree.dot
+└── xml
+
+44 directories, 165 files
